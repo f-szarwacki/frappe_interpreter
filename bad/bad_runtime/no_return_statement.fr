@@ -1,0 +1,6 @@
+f : () -> int;
+f = lambda: () -> int {
+  print("Inside function.");
+};
+
+f();

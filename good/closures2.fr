@@ -1,0 +1,10 @@
+func greeting : (message : string) -> (string) -> void {
+  return lambda: (name : string) -> void {print(message, " ", name); return;};
+}
+
+sayHi, sayHello : (string) -> void;
+sayHi = greeting("Hi");
+sayHello = greeting("- Hello there!\n-");
+
+sayHi("Tom");                  // prints "Hi Tom"
+sayHello("General Kenobi!");   // prints "- Hello there!\n- General Kenobi!"

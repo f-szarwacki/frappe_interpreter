@@ -1,0 +1,2 @@
+// Wrong - cannot declare variable as void.
+t : void;

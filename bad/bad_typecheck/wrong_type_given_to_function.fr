@@ -1,0 +1,6 @@
+func test : (b : bool, x : int) -> int {
+  return 1;
+}
+
+b1, b2 : bool;
+test(b1, b2);

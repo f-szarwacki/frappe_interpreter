@@ -1,0 +1,5 @@
+// Wrong return type.
+func square_in_place: (x: @int) -> void {
+  x = x * x;
+  return x;
+}

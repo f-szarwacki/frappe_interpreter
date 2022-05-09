@@ -1,0 +1,5 @@
+func test : (x : @int) -> void {
+  return;
+}
+
+test(5);

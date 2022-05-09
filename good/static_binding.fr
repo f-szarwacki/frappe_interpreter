@@ -1,0 +1,10 @@
+x : int;
+x = 5;
+func test : () -> void {
+  x = 2 * x;
+  print("Wynik to: ", x);   // prints 0
+  return;
+}
+
+x : string;
+test();

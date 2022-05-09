@@ -1,0 +1,11 @@
+Frappe is a language based on Latte, changing function and variable declarations 
+and adding a bunch of features.
+
+1. Built-in print instruction.
+2. Passing arguments as variables (using "x: @int" syntax).
+3. Variable shadowing with static binding.
+4. Static type-checking.
+5. Helpful runtime errors.
+6. Nested function definitions.
+7. Anonymous functions, functions as arguments and return values. JavaScript-like closures.
+8. Mulitdimensional arrays, which are passed to functions by pointer (Java-like).

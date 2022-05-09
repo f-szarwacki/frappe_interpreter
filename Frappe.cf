@@ -1,0 +1,147 @@
+-- programs ------------------------------------------------
+
+entrypoints Program ;
+
+Program.   Program ::= [Stmt] ;
+
+FnDef.	   Stmt ::= "func" Ident ":" "(" [Arg] ")" "->" Type Block ;
+
+Arg. 	      Arg ::= Ident ":" Type;
+
+ArgRef.     Arg ::= Ident ":" "@" Type;
+
+separator   Arg "," ;
+
+Index.      Index ::= Expr ;
+
+separator   Index "," ;
+
+-- statements ----------------------------------------------
+
+Block.     Block ::= "{" [Stmt] "}" ;
+
+separator  Stmt "" ;
+
+Empty.     Stmt ::= ";" ;
+
+BStmt.     Stmt ::= Block ;
+
+Decl.      Stmt ::= [Item] ":" Type ";" ;
+
+NoInit.    Item ::= Ident ;
+
+NoInitArr. Item ::= Ident "[" [Index] "]" ;
+
+separator nonempty Item "," ;
+
+Ass.      Stmt1 ::= LeftSideAss "=" Expr ";" ;
+
+_.        Stmt ::= Stmt1 ;
+
+SExp.     Stmt ::= Expr ";" ;
+
+LSAIdent.       LeftSideAss ::= Ident ;
+
+LSAArray.       LeftSideAss ::= Ident "[" [Index] "]" ;
+
+Incr.      Stmt ::= Ident "++"  ";" ;
+
+Decr.      Stmt ::= Ident "--"  ";" ;
+
+Ret.       Stmt ::= "return" Expr ";" ;
+
+VRet.      Stmt ::= "return" ";" ;
+
+Cond.      Stmt ::= "if" "(" Expr ")" Block  ;
+
+CondElse.  Stmt ::= "if" "(" Expr ")" Block "else" Block ;
+
+While.     Stmt ::= "while" "(" Expr ")" Block ;
+
+Print.     Stmt ::= "print" "(" [Expr] ")" ";" ;
+
+-- Types ---------------------------------------------------
+
+Int.       Type ::= "int" ;
+
+Str.       Type ::= "string" ;
+
+Bool.      Type ::= "bool" ;
+
+Void.      Type ::= "void" ;
+
+FunT.      Type ::= "(" [Type] ")" "->" Type ;
+
+Array.     Type ::= "array" "[" [Index] "]" Type ; 
+
+separator  Type "," ;
+
+-- Expressions ---------------------------------------------
+
+EVar.      Expr6 ::= Ident ;
+
+EArray.    Expr6 ::= Ident "[" [Index] "]" ;
+
+ELitInt.   Expr6 ::= Integer ;
+
+ELitTrue.  Expr6 ::= "true" ;
+
+ELitFalse. Expr6 ::= "false" ;
+
+EApp.      Expr6 ::= Ident "(" [Expr] ")" ;
+
+EString.   Expr6 ::= String ;
+
+Neg.       Expr5 ::= "-" Expr6 ;
+
+Not.       Expr5 ::= "!" Expr6 ;
+
+EMul.      Expr4 ::= Expr4 MulOp Expr5 ;
+
+EAdd.      Expr3 ::= Expr3 AddOp Expr4 ;
+
+ERel.      Expr2 ::= Expr2 RelOp Expr3 ;
+
+EAnd.      Expr1 ::= Expr2 "&&" Expr1 ;
+
+EOr.       Expr ::= Expr1 "||" Expr ;
+
+ELambda.   Expr ::= "lambda:" "(" [Arg] ")" "->" Type Block ;
+
+coercions  Expr 6 ;
+
+separator  Expr "," ;
+
+
+-- operators -----------------------------------------------
+
+Plus.      AddOp ::= "+" ;
+
+Minus.     AddOp ::= "-" ;
+
+Times.     MulOp ::= "*" ;
+
+Div.       MulOp ::= "/" ;
+
+Mod.       MulOp ::= "%" ;
+
+LTH.       RelOp ::= "<" ;
+
+LE.        RelOp ::= "<=" ;
+
+GTH.       RelOp ::= ">" ;
+
+GE.        RelOp ::= ">=" ;
+
+EQU.       RelOp ::= "==" ;
+
+NE.        RelOp ::= "!=" ;
+
+-- comments ------------------------------------------------
+
+comment    "#" ;
+
+comment    "//" ;
+
+comment    "/*" "*/" ;
+

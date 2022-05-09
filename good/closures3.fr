@@ -1,0 +1,26 @@
+x : int;
+x = 1000;
+
+func closureTest : (amount : @int, adder : @(int) -> int, subtracter : @(int) -> int) -> void {
+  adder = lambda: (value : int) -> int {
+    amount = amount + value;
+    return amount;
+  };
+
+  subtracter = lambda: (value : int) -> int {
+    amount = amount - value;
+    return amount;
+  };
+  return;
+}
+
+adder, subtracter : (int) -> int;
+closureTest(x, adder, subtracter);
+
+print(adder(10));       // prints 1010
+print(subtracter(20));  // prints 990
+
+x = x - 90;
+
+print(x);               // prints 900
+print(adder(10));       // prints 910

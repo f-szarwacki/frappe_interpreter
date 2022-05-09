@@ -1,0 +1,22 @@
+func bank : (amount : int, adder : @(int) -> int, subtracter : @(int) -> int) -> void {
+  adder = lambda: (value : int) -> int {
+    amount = amount + value;
+    return amount;
+  };
+
+  subtracter = lambda: (value : int) -> int {
+    amount = amount - value;
+    return amount;
+  };
+  return;
+}
+
+adder1, subtracter1, adder2, subtracter2 : (int) -> int;
+bank(1000, adder1, subtracter1);
+bank(2000, adder2, subtracter2);
+
+print(adder1(100));       // prints 1100
+print(subtracter1(200));  // prints 900
+
+print(subtracter2(5));    // prints 1995
+print(adder2(100));       // prints 2095

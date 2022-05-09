@@ -1,0 +1,2 @@
+// Wrong - return statement not inside any function.
+return 0;
