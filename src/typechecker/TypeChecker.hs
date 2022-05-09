@@ -200,8 +200,8 @@ typeCheckExpr expr = case expr of
         exprType2 <- typeCheckExpr expr2
         case exprType2 of
           TInt -> return TInt
-          _ -> throwError $ makeError pos ("cannot perform " ++ show mulOp ++ " on type " ++ show exprType2)
-      _ -> throwError $ makeError pos ("cannot perform " ++ show mulOp ++ " on type " ++ show exprType1)
+          _ -> throwError $ makeError pos ("cannot perform " ++ printTree mulOp ++ " on type " ++ show exprType2)
+      _ -> throwError $ makeError pos ("cannot perform " ++ printTree mulOp ++ " on type " ++ show exprType1)
   EAdd pos expr1 addOp expr2 -> do
     exprType1 <- typeCheckExpr expr1
     case exprType1 of
@@ -209,8 +209,8 @@ typeCheckExpr expr = case expr of
         exprType2 <- typeCheckExpr expr2
         case exprType2 of
           TInt -> return TInt
-          _ -> throwError $ makeError pos ("cannot perform " ++ show addOp ++ " on type " ++ show exprType2)
-      _ -> throwError $ makeError pos ("cannot perform " ++ show addOp ++ " on type " ++ show exprType1)
+          _ -> throwError $ makeError pos ("cannot perform " ++ printTree addOp ++ " on type " ++ show exprType2)
+      _ -> throwError $ makeError pos ("cannot perform " ++ printTree addOp ++ " on type " ++ show exprType1)
   ERel pos expr1 relOp expr2 -> do
     exprType1 <- typeCheckExpr expr1
     case exprType1 of
@@ -218,8 +218,8 @@ typeCheckExpr expr = case expr of
         exprType2 <- typeCheckExpr expr2
         case exprType2 of
           TInt -> return TBool
-          _ -> throwError $ makeError pos ("cannot perform " ++ show relOp ++ " on type " ++ show exprType2)
-      _ -> throwError $ makeError pos ("cannot perform " ++ show relOp ++ " on type " ++ show exprType1)
+          _ -> throwError $ makeError pos ("cannot perform " ++ printTree relOp ++ " on type " ++ show exprType2)
+      _ -> throwError $ makeError pos ("cannot perform " ++ printTree relOp ++ " on type " ++ show exprType1)
   EAnd pos expr1 expr2 -> do
     exprType1 <- typeCheckExpr expr1
     case exprType1 of
@@ -275,9 +275,6 @@ checkArgsType pos argTypes exprs = do
     typeInferred <- typeCheckExpr expr
     when (not $ doTTypesMatch typeInferred (snd argType)) (throwError $ makeError pos ("type in function definition and application does not match. Expected: " ++ show (snd argType) ++ ", got: " ++ show typeInferred)))
   
-
-  
-
 
 data ArgWay = ByValue | ByReference deriving (Eq, Ord, Show, Read)
 
