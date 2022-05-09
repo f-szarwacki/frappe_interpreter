@@ -20,6 +20,7 @@ import Control.Monad.Reader
 import Control.Monad.Except
 import Control.Monad.Identity
 import Data.Maybe (fromMaybe)
+import Data.List (intercalate)
 import qualified Data.Map as M
 
 type TypeCheckError = String
@@ -87,14 +88,14 @@ typeCheckStmt (Ret pos expr) = do
   typeInferred <- typeCheckExpr expr
   case typeRequired of
     Nothing -> throwError $ makeError pos "unexpected return statement"
-    Just t -> if doTTypesMatch t typeInferred then return Nothing else throwError $ makeError pos "mismatch between type declared " ++ show t ++ " and type returned " ++ show typeInferred
+    Just t -> if doTTypesMatch t typeInferred then return Nothing else throwError $ makeError pos ("mismatch between type declared: " ++ show t ++ ", and type returned: " ++ show typeInferred)
 
 typeCheckStmt (VRet pos) = do
   typeRequired <- ask
   case typeRequired of
     Nothing -> throwError $ makeError pos "unexpected return statement"
     Just TVoid -> return Nothing
-    Just t -> throwError $ makeError pos "function should return " ++ show t ++ " but it returns void"
+    Just t -> throwError $ makeError pos ("function should return: " ++ show t ++ ", but it returns void")
 
 typeCheckStmt (Ass pos lsa expr) = do
   case lsa of
@@ -105,7 +106,7 @@ typeCheckStmt (Ass pos lsa expr) = do
         Nothing -> throwError $ makeError pos "cannot assign to undeclared variable"
         Just varType -> if doTTypesMatch exprType varType
           then return Nothing
-          else throwError $ makeError pos "variable is declared as of type: " ++ show varType ++ ", it cannot be assigned a value of type: " ++ show exprType
+          else throwError $ makeError pos ("variable is declared as of type: " ++ show varType ++ ", it cannot be assigned a value of type: " ++ show exprType)
     LSAArray _ id idxs -> error "not implemented"
   return Nothing
 
@@ -118,14 +119,14 @@ typeCheckStmt (Incr pos id) = do
   case maybetype of
     Nothing -> throwError $ makeError pos "variable not declared"
     Just TInt -> return Nothing
-    Just _ -> throwError $ makeError pos "variable is not an integer - it cannot be incremented"
+    Just _ -> throwError $ makeError pos "variable is not an integer, it cannot be incremented"
 
 typeCheckStmt (Decr pos id) = do
   maybetype <- gets (M.lookup id)
   case maybetype of
     Nothing -> throwError $ makeError pos "variable not declared"
     Just TInt -> return Nothing
-    Just _ -> throwError $ makeError pos "variable is not an integer - it cannot be decremented"
+    Just _ -> throwError $ makeError pos "variable is not an integer, it cannot be decremented"
 
 typeCheckStmt (Cond pos expr (Block _ stmts)) = do
   conditionType <- typeCheckExpr expr
@@ -199,8 +200,8 @@ typeCheckExpr expr = case expr of
         exprType2 <- typeCheckExpr expr2
         case exprType2 of
           TInt -> return TInt
-          _ -> throwError $ makeError pos "cannot perform " ++ show mulOp ++ " on type " ++ show exprType2
-      _ -> throwError $ makeError pos "cannot perform " ++ show mulOp ++ " on type " ++ show exprType1
+          _ -> throwError $ makeError pos ("cannot perform " ++ show mulOp ++ " on type " ++ show exprType2)
+      _ -> throwError $ makeError pos ("cannot perform " ++ show mulOp ++ " on type " ++ show exprType1)
   EAdd pos expr1 addOp expr2 -> do
     exprType1 <- typeCheckExpr expr1
     case exprType1 of
@@ -208,8 +209,8 @@ typeCheckExpr expr = case expr of
         exprType2 <- typeCheckExpr expr2
         case exprType2 of
           TInt -> return TInt
-          _ -> throwError $ makeError pos "cannot perform " ++ show addOp ++ " on type " ++ show exprType2
-      _ -> throwError $ makeError pos "cannot perform " ++ show addOp ++ " on type " ++ show exprType1
+          _ -> throwError $ makeError pos ("cannot perform " ++ show addOp ++ " on type " ++ show exprType2)
+      _ -> throwError $ makeError pos ("cannot perform " ++ show addOp ++ " on type " ++ show exprType1)
   ERel pos expr1 relOp expr2 -> do
     exprType1 <- typeCheckExpr expr1
     case exprType1 of
@@ -217,8 +218,8 @@ typeCheckExpr expr = case expr of
         exprType2 <- typeCheckExpr expr2
         case exprType2 of
           TInt -> return TBool
-          _ -> throwError $ makeError pos "cannot perform " ++ show relOp ++ " on type " ++ show exprType2
-      _ -> throwError $ makeError pos "cannot perform " ++ show relOp ++ " on type " ++ show exprType1
+          _ -> throwError $ makeError pos ("cannot perform " ++ show relOp ++ " on type " ++ show exprType2)
+      _ -> throwError $ makeError pos ("cannot perform " ++ show relOp ++ " on type " ++ show exprType1)
   EAnd pos expr1 expr2 -> do
     exprType1 <- typeCheckExpr expr1
     case exprType1 of
@@ -226,8 +227,8 @@ typeCheckExpr expr = case expr of
         exprType2 <- typeCheckExpr expr2
         case exprType2 of
           TBool -> return TBool
-          _ -> throwError $ makeError pos "cannot perform && on type " ++ show exprType2
-      _ -> throwError $ makeError pos "cannot perform && on type " ++ show exprType1
+          _ -> throwError $ makeError pos ("cannot perform && on type " ++ show exprType2)
+      _ -> throwError $ makeError pos ("cannot perform && on type " ++ show exprType1)
   EOr pos expr1 expr2 -> do
     exprType1 <- typeCheckExpr expr1
     case exprType1 of
@@ -235,8 +236,8 @@ typeCheckExpr expr = case expr of
         exprType2 <- typeCheckExpr expr2
         case exprType2 of
           TBool -> return TBool
-          _ -> throwError $ makeError pos "cannot perform || on type " ++ show exprType2
-      _ -> throwError $ makeError pos "cannot perform || on type " ++ show exprType1
+          _ -> throwError $ makeError pos ("cannot perform || on type " ++ show exprType2)
+      _ -> throwError $ makeError pos ("cannot perform || on type " ++ show exprType1)
   
   ELambda pos args returnType (Block _ stmts) -> do
     savedState <- get
@@ -259,11 +260,11 @@ typeCheckExpr expr = case expr of
         TFun argTypes returnType -> do
           checkArgsType pos argTypes exprs
           return returnType
-        _ -> throwError $ makeError pos "identifier is not a function, it cannot be used as such"
+        _ -> throwError $ makeError pos ("variable is not a function (it is of type: " ++ show t ++ "), it cannot be used as such")
 
 checkArgsType :: Position -> [(ArgWay, TType)] -> [Expr] -> TypeCheckerMonad ()
 checkArgsType pos argTypes exprs = do
-  when (length argTypes /= length exprs) (throwError $ makeError pos "number of arguments required (" ++ show (length argTypes) ++ ") and given (" ++ show (length exprs) ++ ") does not match")
+  when (length argTypes /= length exprs) (throwError $ makeError pos ("number of arguments required: " ++ show (length argTypes) ++ ", and given: " ++ show (length exprs) ++ ", does not match"))
   forM_ (zip argTypes exprs) (\(argType, expr) -> do
     case argType of
       (ByReference, t) -> case expr of
@@ -272,7 +273,7 @@ checkArgsType pos argTypes exprs = do
       _ -> return ())
   forM_ (zip argTypes exprs) (\(argType, expr) -> do
     typeInferred <- typeCheckExpr expr
-    when (not $ doTTypesMatch typeInferred (snd argType)) (throwError $ makeError pos "type in function definition and application does not match. Expected: " ++ show (snd argType) ++ " got: " ++ show typeInferred))
+    when (not $ doTTypesMatch typeInferred (snd argType)) (throwError $ makeError pos ("type in function definition and application does not match. Expected: " ++ show (snd argType) ++ ", got: " ++ show typeInferred)))
   
 
   
@@ -286,7 +287,18 @@ data TType = TInt
     | TVoid
     | TFun [(ArgWay, TType)] TType -- TODO not a good name
     | TArray [Integer] TType
-  deriving (Eq, Ord, Show, Read)
+  deriving (Eq, Ord, Read)
+
+instance Show TType where
+  show t = case t of
+    TInt -> "int"
+    TString -> "string"
+    TBool -> "bool"
+    TVoid -> "void"
+    TFun argTypes returnType -> "(" ++ (intercalate ", " (map (\(argWay, t) -> (case argWay of
+      ByValue -> ""
+      ByReference -> "@") ++ show t) argTypes)) ++ ") -> " ++ show returnType 
+    TArray _ _ -> error "not implemented"
 
 getType :: Type -> TType
 getType t = case t of
