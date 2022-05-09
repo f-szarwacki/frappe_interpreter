@@ -1,0 +1,1 @@
+Frappe interpreter in Haskell was written as an assignment for JPP (Languages and Paradigms of Programming) class on MIMUW (Faculty of Mathematics, Informatics and Mechanics, University of Warsaw).
