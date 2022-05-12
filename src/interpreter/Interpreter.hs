@@ -31,8 +31,8 @@ data Value
   | VString String 
   | VFun [ArgWay] ([ValueOrLoc] -> InterpreterMonad Value)
   | VVoid 
-  | VUninitializedFunction
-  | VNotReturned
+  | VUninitializedFunction -- Value assigned to function variables declared but with no assignment.
+  | VNotReturned -- Special pseudovalue used to check whether a function returned something.
 
 instance Show Value where
   show v = case v of
@@ -44,7 +44,8 @@ instance Show Value where
     VUninitializedFunction -> "UninitializedFunction"
     VNotReturned -> "NotReturnedFromFunction"
 
-data Exception = RunTimeErrorExc RunTimeError | ReturnExc Value
+-- Exception is used both as a way of throwing errors and for non-local jumps (return statement).
+data Exception = RunTimeErrorExc RunTimeError | ReturnExc Value 
 data EnvAndState = EnvAndState IdentToLocation LocationToValue
 
 makeError :: Position -> String -> Exception
@@ -55,6 +56,7 @@ makeError pos errorString = RunTimeErrorExc ((case pos of
 returnValue :: Value -> Exception
 returnValue = ReturnExc
 
+-- Propagates the error if it is not a return.
 catchReturnValue :: Exception -> InterpreterMonad Value
 catchReturnValue (ReturnExc value) = return value
 catchReturnValue err = throwError err
@@ -65,6 +67,8 @@ valueFromId id (EnvAndState env state) = do
   value <- M.lookup loc state
   return value
 
+-- "typechecker error" is used whenever a situation is impossible for interpreter, as typechecker 
+-- should throw an error before
 valueForId :: Ident -> Value -> EnvAndState -> EnvAndState
 valueForId id value (EnvAndState env state) = EnvAndState env (M.insert (fromMaybe (error "typechecker error") (M.lookup id env)) value state)
 
@@ -74,8 +78,9 @@ getEnv (EnvAndState env _) = env
 putEnv :: IdentToLocation -> EnvAndState -> EnvAndState
 putEnv env (EnvAndState _ state) = (EnvAndState env state)
 
+-- Locations are not being freed so they are assigned from 0 onwards.
 newloc :: LocationToValue -> Location
-newloc locToValue = M.size locToValue -- TODO will work only if locations are given and deleted continously [0, 1, 2, 3, 4, ...]
+newloc locToValue = M.size locToValue
 
 matchIdentWithNewLocationAndSetValue :: Ident -> Value -> EnvAndState -> EnvAndState
 matchIdentWithNewLocationAndSetValue id value (EnvAndState env state) = 
@@ -99,24 +104,25 @@ interpretProgram (Program _ stmts) = forM_ stmts interpretStmt
 
 interpretStmt :: Stmt -> InterpreterMonad ()
 
--- TODO this code is duplicated in lambda
 interpretStmt (FnDef pos ident args _ (Block _ stmts)) = do
   currentEnv <- gets getEnv
   let argWays = map (fst . getArgTType) args
   let f valueOrLocs = do
+      -- In function body, which will be run, environment from the place of declaration is being used.
       modify $ putEnv currentEnv
       modify $ matchIdentWithNewLocationAndSetValue ident (VFun argWays f)
       forM_ (zip args valueOrLocs) (\x -> case x of
         (Arg _ id _, Value' value) -> modify $ matchIdentWithNewLocationAndSetValue id value
         (ArgRef _ id _, Loc' loc) -> modify $ matchIdentWithLocation id loc
         _ -> error "typechecker error")
-      returnedValue <- (foldM (\_ stmt -> interpretStmt stmt >> return VNotReturned) VNotReturned stmts) `catchError` catchReturnValue -- TODO this may be wrong!
+      -- If function does not reach a return statement foldM will run without an exception an will yield VNotReturned value.
+      -- Otherwise return Exception is being thrown and catched and we get the returned value this way.
+      returnedValue <- (foldM (\_ stmt -> interpretStmt stmt >> return VNotReturned) VNotReturned stmts) `catchError` catchReturnValue
       case returnedValue of
         VNotReturned -> throwError $ makeError pos "function does not reach return statement"
         rv -> return rv
 
   modify $ matchIdentWithNewLocationAndSetValue ident (VFun argWays f)
-  return ()
 
 interpretStmt (Empty _) = return ()
 
@@ -126,6 +132,7 @@ interpretStmt (BStmt _ (Block _ stmts)) = do
   modify $ putEnv savedEnv
 
 interpretStmt (Decl pos items t) = do
+  -- Default values assigned at declaration: int = 0; string = ""; bool = false; function is undefined.
   defaultValue <- case (getType t) of
     TInt -> return $ VInt 0
     TString -> return $ VString ""
@@ -231,7 +238,7 @@ evalExpr expr = case expr of
     maybeValue <- gets $ valueFromId id
     case maybeValue of
       Just t -> return t
-      Nothing -> error "typechecker error" -- TODO - this shouldn't happen, should it?
+      Nothing -> error "typechecker error"
   
   ELitInt pos num -> return $ VInt num
   
@@ -266,6 +273,7 @@ evalExpr expr = case expr of
       _ -> error "typechecker error"
     case mulOp of
       Times _ -> return ()
+      -- 0 division problem is applicable to both division and modulo
       _ -> when (intValue2 == 0) (throwError $ makeError pos "division by 0")
     return $ VInt ((getMulOp mulOp) intValue1 intValue2)    
   
@@ -318,6 +326,7 @@ evalExpr expr = case expr of
     case maybeFunction of
       -- func is of type [ValueOrLoc] -> InterpreterMonad Value
       Just (VFun argWays func) -> do
+        -- We check what way were the arguments passed. If by value we need just value, if by reference, we need the location.
         valOrLocs <- forM (zip argWays exprs) (\x -> case x of
           (ByReference, (EVar _ id)) -> fmap Loc' (gets $ getLocationFromIdent id)
           (ByValue, expr) -> fmap Value' (evalExpr expr)
@@ -328,17 +337,17 @@ evalExpr expr = case expr of
         return returnValue
       _ -> error "typechecker error"
 
-  -- TODO this code is copy-pasted and modified from fundef
   ELambda pos args returnType (Block _ stmts) -> do
     currentEnv <- gets getEnv
     let argWays = map (fst . getArgTType) args
     let f valueOrLocs = do
+        -- In function body, which will be run, environment from the place of declaration is being used.
         modify $ putEnv currentEnv
         forM_ (zip args valueOrLocs) (\x -> case x of
           (Arg _ id _, Value' value) -> modify $ matchIdentWithNewLocationAndSetValue id value
           (ArgRef _ id _, Loc' loc) -> modify $ matchIdentWithLocation id loc
           _ -> error "typechecker")
-        returnedValue <- (foldM (\_ stmt -> interpretStmt stmt >> return VNotReturned) VNotReturned stmts) `catchError` catchReturnValue -- TODO this may be wrong!
+        returnedValue <- (foldM (\_ stmt -> interpretStmt stmt >> return VNotReturned) VNotReturned stmts) `catchError` catchReturnValue
         case returnedValue of
           VNotReturned -> throwError $ makeError pos "function does not reach return statement"
           rv -> return rv
@@ -354,7 +363,7 @@ interpret prg = do
   case result of
     Left err -> case err of
       RunTimeErrorExc err -> putStrLn err
-      ReturnExc _ -> error "typechecker error" --TODO this shouldn't happen
+      ReturnExc _ -> error "typechecker error"
     Right _ -> return ()
 
 ------------------------------------------------------

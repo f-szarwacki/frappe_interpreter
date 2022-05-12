@@ -3,11 +3,6 @@
 {-# HLINT ignore "Use lambda-case" #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
--- TODO: if a functional type is being used, what should be assume about method of passing arguments
-  -- in C++ passing by reference is NOT different than passing by value for type
-
--- TODO: nicer printer for types ex. (int) -> void instead of TFun [(ByValue, TInt)] TVoid
--- TODO: nicer printer for mulOp etc. no Plus (Just (2,12)) stuff
 
 module TypeChecker where
 
@@ -24,28 +19,20 @@ import Data.List (intercalate)
 import qualified Data.Map as M
 
 type TypeCheckError = String
-type Position = BNFC'Position --Maybe (Int, Int)
+type Position = BNFC'Position -- Maybe (Int, Int)
+type TypeMap = M.Map Ident TType
 
 makeError :: Position -> String -> TypeCheckError
 makeError pos errorString = (case pos of
   Just (row, column) -> "Error at row " ++ show row ++ ", column " ++ show column ++ ": "
   Nothing -> "Error: ") ++ errorString ++ "."
 
-throwErrorWithPos :: Position -> String -> TypeCheckerMonad ()
-throwErrorWithPos pos str = throwError $ makeError pos str
-
-
-type TypeMap = M.Map Ident TType
-
--- Reader Env is the type required to return by given part of code. If Nothing then no return statement is expected.
--- TODO is there a simple way to check if a return statement is present?
--- NO - we cannot determine it before runtime as there can be a dead branch which does not need a return stmt in it
 type TypeCheckerMonad = ExceptT TypeCheckError (ReaderT (Maybe TType) (StateT TypeMap Identity))
 
 typeCheck :: Program -> TypeCheckerMonad ()
 typeCheck (Program _ stmts) = forM_ stmts typeCheckStmt
 
-typeCheckStmt :: Stmt -> TypeCheckerMonad (Maybe TType)
+typeCheckStmt :: Stmt -> TypeCheckerMonad ()
 
 addIdTypePair :: Position -> Ident -> TType -> TypeCheckerMonad ()
 addIdTypePair pos id t = case t of
@@ -58,7 +45,6 @@ getArgTType (ArgRef _ _ t) = (ByReference, getType t)
 
 typeCheckStmt (FnDef pos ident args returnType (Block _ stmts)) = do
   savedState <- get
-  -- TODO this code is duplicated in lambda expr
   forM_ args (\arg-> case arg of
     Arg pos id t -> addIdTypePair pos id (getType t)
     ArgRef pos id t -> addIdTypePair pos id (getType t))
@@ -68,33 +54,30 @@ typeCheckStmt (FnDef pos ident args returnType (Block _ stmts)) = do
   put savedState
   -- The argument variables are going out of scope, but the function itself has to be readded.
   addIdTypePair pos ident (TFun (map getArgTType args) (getType returnType))
-  return Nothing
 
-typeCheckStmt (Empty pos) = return Nothing
+typeCheckStmt (Empty pos) = return ()
 typeCheckStmt (BStmt pos (Block _ stmts)) = do
   savedState <- get
   forM_ stmts typeCheckStmt
   put savedState
-  return Nothing
 
 typeCheckStmt (Decl pos items t) = do
   forM_ items (\item -> case item of
     NoInit pos id -> addIdTypePair pos id (getType t)
     NoInitArr pos id idxs -> error "not implemented")
-  return Nothing
 
 typeCheckStmt (Ret pos expr) = do
   typeRequired <- ask
   typeInferred <- typeCheckExpr expr
   case typeRequired of
     Nothing -> throwError $ makeError pos "unexpected return statement"
-    Just t -> if doTTypesMatch t typeInferred then return Nothing else throwError $ makeError pos ("mismatch between type declared: " ++ show t ++ ", and type returned: " ++ show typeInferred)
+    Just t -> if doTTypesMatch t typeInferred then return () else throwError $ makeError pos ("mismatch between type declared: " ++ show t ++ ", and type returned: " ++ show typeInferred)
 
 typeCheckStmt (VRet pos) = do
   typeRequired <- ask
   case typeRequired of
     Nothing -> throwError $ makeError pos "unexpected return statement"
-    Just TVoid -> return Nothing
+    Just TVoid -> return ()
     Just t -> throwError $ makeError pos ("function should return: " ++ show t ++ ", but it returns void")
 
 typeCheckStmt (Ass pos lsa expr) = do
@@ -105,27 +88,26 @@ typeCheckStmt (Ass pos lsa expr) = do
       case maybetype of
         Nothing -> throwError $ makeError pos "cannot assign to undeclared variable"
         Just varType -> if doTTypesMatch exprType varType
-          then return Nothing
+          then return ()
           else throwError $ makeError pos ("variable is declared as of type: " ++ show varType ++ ", it cannot be assigned a value of type: " ++ show exprType)
     LSAArray _ id idxs -> error "not implemented"
-  return Nothing
 
 typeCheckStmt (SExp _ expr) = do
-  t <- typeCheckExpr expr
-  return Nothing
+  typeCheckExpr expr
+  return ()
 
 typeCheckStmt (Incr pos id) = do
   maybetype <- gets (M.lookup id)
   case maybetype of
     Nothing -> throwError $ makeError pos "variable not declared"
-    Just TInt -> return Nothing
+    Just TInt -> return ()
     Just _ -> throwError $ makeError pos "variable is not an integer, it cannot be incremented"
 
 typeCheckStmt (Decr pos id) = do
   maybetype <- gets (M.lookup id)
   case maybetype of
     Nothing -> throwError $ makeError pos "variable not declared"
-    Just TInt -> return Nothing
+    Just TInt -> return ()
     Just _ -> throwError $ makeError pos "variable is not an integer, it cannot be decremented"
 
 typeCheckStmt (Cond pos expr (Block _ stmts)) = do
@@ -136,7 +118,6 @@ typeCheckStmt (Cond pos expr (Block _ stmts)) = do
   savedState <- get
   forM_ stmts typeCheckStmt
   put savedState
-  return Nothing
 
 typeCheckStmt (CondElse pos expr (Block _ stmts1) (Block _ stmts2)) = do
   conditionType <- typeCheckExpr expr
@@ -149,7 +130,6 @@ typeCheckStmt (CondElse pos expr (Block _ stmts1) (Block _ stmts2)) = do
   savedState <- get
   forM_ stmts2 typeCheckStmt
   put savedState
-  return Nothing
 
 typeCheckStmt (While pos expr (Block _ stmts)) = do
   conditionType <- typeCheckExpr expr
@@ -159,7 +139,6 @@ typeCheckStmt (While pos expr (Block _ stmts)) = do
   savedState <- get
   forM_ stmts typeCheckStmt
   put savedState
-  return Nothing
 
 typeCheckStmt (Print pos exprs) = do
   forM_ exprs (\expr -> do
@@ -169,9 +148,8 @@ typeCheckStmt (Print pos exprs) = do
       TString -> return ()
       TBool -> return ()
       t -> throwError $ makeError pos ("cannot print value of type: " ++ show t))
-  return Nothing
 
-
+-- Checking types of all operations and returning type of expression.
 typeCheckExpr :: Expr -> TypeCheckerMonad TType
 typeCheckExpr expr = case expr of
   EVar pos id -> do
@@ -241,13 +219,12 @@ typeCheckExpr expr = case expr of
   
   ELambda pos args returnType (Block _ stmts) -> do
     savedState <- get
-    -- TODO this code is duplicated in fundef
     forM_ args (\arg-> case arg of
       Arg pos id t -> addIdTypePair pos id (getType t)
       ArgRef pos id t -> addIdTypePair pos id (getType t))
     local (\_-> Just $ getType returnType) (forM_ stmts typeCheckStmt)
     put savedState
-    -- return defined function
+    -- Return defined function type.
     return (TFun (map getArgTType args) (getType returnType))
 
   EArray pos id idxs -> error "not implemented"
@@ -262,6 +239,7 @@ typeCheckExpr expr = case expr of
           return returnType
         _ -> throwError $ makeError pos ("variable is not a function (it is of type: " ++ show t ++ "), it cannot be used as such")
 
+-- Checking if number and types of expressions given match those declared.
 checkArgsType :: Position -> [(ArgWay, TType)] -> [Expr] -> TypeCheckerMonad ()
 checkArgsType pos argTypes exprs = do
   when (length argTypes /= length exprs) (throwError $ makeError pos ("number of arguments required: " ++ show (length argTypes) ++ ", and given: " ++ show (length exprs) ++ ", does not match"))
@@ -275,14 +253,14 @@ checkArgsType pos argTypes exprs = do
     typeInferred <- typeCheckExpr expr
     when (not $ doTTypesMatch typeInferred (snd argType)) (throwError $ makeError pos ("type in function definition and application does not match. Expected: " ++ show (snd argType) ++ ", got: " ++ show typeInferred)))
   
-
+-- Way of passing an argument.
 data ArgWay = ByValue | ByReference deriving (Eq, Ord, Show, Read)
 
 data TType = TInt
     | TString
     | TBool
     | TVoid
-    | TFun [(ArgWay, TType)] TType -- TODO not a good name
+    | TFun [(ArgWay, TType)] TType
     | TArray [Integer] TType
   deriving (Eq, Ord, Read)
 
@@ -303,7 +281,9 @@ getType t = case t of
   Str a -> TString
   Bool a -> TBool
   Void a -> TVoid
-  FunT a tys ty -> TFun (map (\x -> (ByValue, getType x)) tys) (getType ty) -- TODO possible problem here!
+  -- Like in c++, we both `func t : (x : @int) -> void` and `func s : (x : int) -> void` will have written type of
+  -- (int) -> void so when getting type from written by user we cannot make any assumptions about passing args by reference
+  FunT a tys ty -> TFun (map (\x -> (ByValue, getType x)) tys) (getType ty)
   Array a ins ty -> error "not implemented"
 
 doTTypesMatch :: TType -> TType -> Bool
