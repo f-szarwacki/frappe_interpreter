@@ -1,0 +1,25 @@
+func gcd : (a : int, b : int) -> int {
+  c : int;
+  if (a < 0) {
+    a = a * (-1);
+  }
+  if (b < 0) {
+    b = b * (-1);
+  }
+  if (a < b) {
+    c = a;
+    a = b;
+    b = c;
+  }
+
+  if (b == 0) {
+    return a;
+  }
+
+  c = a % b;
+  return gcd(b, c);
+}
+
+print(gcd(17, 36)); // prints "1"
+print(gcd(48, 36)); // prints "12"
+print(gcd(-7, 28)); // prints "7"
