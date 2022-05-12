@@ -1,0 +1,10 @@
+func test : (x : @int) -> void {
+  x = x + 2;
+  return;
+  x = x + 1000;
+}
+
+y : int;
+y = 5;
+test(y);
+print(y); // prints "7"

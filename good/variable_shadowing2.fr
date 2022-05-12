@@ -1,0 +1,20 @@
+func f : () -> void {
+  print("first");
+  return;
+}
+
+g : () -> void;
+g = f;
+
+{
+  f();  // prints "first"
+  g();  // prints "first"
+  g = lambda: () -> void {print("second"); return;};
+  f : () -> void;
+  f = g;
+  f();  // prints "second"
+  g();  // prints "second"
+}
+
+f();  // prints "first"
+g();  // prints "second"

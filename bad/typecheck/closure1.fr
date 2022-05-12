@@ -1,0 +1,17 @@
+func bank : (initValue : int, adder : @(int) -> int) -> void {
+ amount : int;
+ amount = initValue;
+ adder = lambda: (value : int) -> int {
+   amount = amount + value;
+   return amount;
+ };
+ return;
+}
+
+adder : (int) -> int;
+bank(1000, adder);
+
+print(adder(1));  // prints "1001"
+print(adder(-2)); // prints "999"
+
+print(amount);

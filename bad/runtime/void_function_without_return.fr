@@ -1,0 +1,12 @@
+func apply1 : (result : @int, f : (int) -> int, arg : int) -> void {
+  result = f(arg);
+}
+
+func multiplier : (x : int) -> (int) -> int {
+  return lambda: (y : int) -> int {return x * y;};
+}
+
+c : int;
+apply1(c, multiplier(5), 6);
+
+print(c);   // prints "30"
