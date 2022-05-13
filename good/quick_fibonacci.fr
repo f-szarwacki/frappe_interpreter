@@ -1,0 +1,51 @@
+func matrix2x2_multiply : (a11 : int, a12 : int, a21 : int, a22 : int,
+                            b11 : int, b12 : int, b21 : int, b22 : int, 
+                            c11 : @int, c12 : @int, c21 : @int, c22 : @int) -> void {
+  c11 = a11 * b11 + a12 * b21;
+  c12 = a11 * b12 + a12 * b22;
+  c21 = a21 * b11 + a22 * b21;
+  c22 = a21 * b12 + a22 * b22;
+  return;
+}
+
+func matrix2x2_by_vector_multiply : (a11 : int, a12 : int, a21 : int, a22 : int, b1 : @int, b2 : @int) -> void {
+  temp : int;
+  temp = b1;
+  b1 = b1 * a11 + b2 * a12;
+  b2 = temp * a21 + b2 * a22;
+  return;
+}
+
+func quick_matrix_exp : (n : int, 
+                        a11 : int, a12 : int, a21 : int, a22 : int,
+                        c11 : @int, c12 : @int, c21 : @int, c22 : @int) -> void {
+  c11 = 1;
+  c22 = 1;
+  c12 = 0;
+  c21 = 0;
+
+  while (n > 0) {
+    if (n % 2 == 1) {
+      matrix2x2_multiply(c11, c12, c21, c22, a11, a12, a21, a22, c11, c12, c21, c22); // R = R * A;
+    }
+    matrix2x2_multiply(a11, a12, a21, a22, a11, a12, a21, a22, a11, a12, a21, a22);   // A = A^2;
+    n = n / 2;
+  }
+  return;
+}
+
+func fib : (n : int) -> int {
+  a11, a12, a21, a22 : int;
+  a11 = 1;
+  a12 = 1;
+  a21 = 1;
+  a22 = 0;
+  quick_matrix_exp(n-1, a11, a12, a21, a22, a11, a12, a21, a22);
+  v1, v2 : int;
+  v1 = 1;
+  v2 = 0;
+  matrix2x2_by_vector_multiply(a11, a12, a21, a22, v1, v2);
+  return v1;
+}
+
+print(fib(1000)); // prints "43466557686937456435688527675040625802564660517371780402481729089536555417949051890403879840079255169295922593080322634775209689623239873322471161642996440906533187938298969649928516003704476137795166849228875"
