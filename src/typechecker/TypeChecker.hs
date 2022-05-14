@@ -70,7 +70,10 @@ typeCheckStmt (Ret pos expr) = do
   typeInferred <- typeCheckExpr expr
   case typeRequired of
     Nothing -> throwError $ makeError pos "unexpected return statement"
-    Just t -> if doTTypesMatch t typeInferred then return () else throwError $ makeError pos ("mismatch between type declared: " ++ show t ++ ", and type returned: " ++ show typeInferred)
+    Just t -> if doTTypesMatch t typeInferred 
+      then return () 
+      else throwError $ makeError pos ("mismatch between type declared: " ++ show t ++ 
+        ", and type returned: " ++ show typeInferred)
 
 typeCheckStmt (VRet pos) = do
   typeRequired <- ask
@@ -88,7 +91,8 @@ typeCheckStmt (Ass pos lsa expr) = do
         Nothing -> throwError $ makeError pos "cannot assign to undeclared variable"
         Just varType -> if doTTypesMatch exprType varType
           then return ()
-          else throwError $ makeError pos ("variable is declared as of type: " ++ show varType ++ ", it cannot be assigned a value of type: " ++ show exprType)
+          else throwError $ makeError pos ("variable is declared as of type: " ++ show varType ++ 
+            ", it cannot be assigned a value of type: " ++ show exprType)
 
 typeCheckStmt (SExp _ expr) = do
   typeCheckExpr expr
@@ -233,12 +237,14 @@ typeCheckExpr expr = case expr of
         TFun argTypes returnType -> do
           checkArgsType pos argTypes exprs
           return returnType
-        _ -> throwError $ makeError pos ("variable is not a function (it is of type: " ++ show t ++ "), it cannot be used as such")
+        _ -> throwError $ makeError pos ("variable is not a function (it is of type: " ++ show t ++ 
+          "), it cannot be used as such")
 
 -- Checking if number and types of expressions given match those declared.
 checkArgsType :: Position -> [(ArgWay, TType)] -> [Expr] -> TypeCheckerMonad ()
 checkArgsType pos argTypes exprs = do
-  when (length argTypes /= length exprs) (throwError $ makeError pos ("number of arguments required: " ++ show (length argTypes) ++ ", and given: " ++ show (length exprs) ++ ", does not match"))
+  when (length argTypes /= length exprs) (throwError $ makeError pos ("number of arguments required: " ++ 
+    show (length argTypes) ++ ", and given: " ++ show (length exprs) ++ ", does not match"))
   forM_ (zip argTypes exprs) (\(argType, expr) -> do
     case argType of
       (ByReference, t) -> case expr of
@@ -247,7 +253,9 @@ checkArgsType pos argTypes exprs = do
       _ -> return ())
   forM_ (zip argTypes exprs) (\(argType, expr) -> do
     typeInferred <- typeCheckExpr expr
-    when (not $ doTTypesMatch typeInferred (snd argType)) (throwError $ makeError pos ("type in function definition and application does not match. Expected: " ++ show (snd argType) ++ ", got: " ++ show typeInferred)))
+    when (not $ doTTypesMatch typeInferred (snd argType)) (throwError $ makeError pos 
+      ("type in function definition and application does not match. Expected: " ++ show (snd argType) ++ 
+      ", got: " ++ show typeInferred)))
   
 -- Way of passing an argument.
 data ArgWay = ByValue | ByReference deriving (Eq, Ord, Show, Read)
@@ -281,7 +289,8 @@ getType t = case t of
   FunT a tys ty -> TFun (map (\x -> (ByValue, getType x)) tys) (getType ty)
 
 doTTypesMatch :: TType -> TType -> Bool
-doTTypesMatch (TFun args1 returnType1) (TFun args2 returnType2) = (all (\(t1, t2) -> doTTypesMatch t1 t2) (zip (map snd args1) (map snd args2))) && (doTTypesMatch returnType1 returnType2)
+doTTypesMatch (TFun args1 returnType1) (TFun args2 returnType2) = (all (\(t1, t2) -> doTTypesMatch t1 t2) 
+  (zip (map snd args1) (map snd args2))) && (doTTypesMatch returnType1 returnType2)
 doTTypesMatch t1 t2 = t1 == t2
 
 runTypeChecker :: TypeCheckerMonad () -> Maybe TType -> TypeMap -> Either TypeCheckError ()

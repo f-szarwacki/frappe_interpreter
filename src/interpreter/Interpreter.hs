@@ -31,8 +31,8 @@ data Value
   | VString String 
   | VFun [ArgWay] ([ValueOrLoc] -> InterpreterMonad Value)
   | VVoid 
-  | VUninitializedFunction -- Value assigned to function variables declared but with no assignment.
-  | VNotReturned -- Special pseudovalue used to check whether a function returned something.
+  | VUninitializedFunction  -- Value assigned to function variables declared but with no assignment.
+  | VNotReturned            -- Special pseudovalue used to check whether a function returned something.
 
 instance Show Value where
   show v = case v of
@@ -70,7 +70,8 @@ valueFromId id (EnvAndState env state) = do
 -- "typechecker error" is used whenever a situation is impossible for interpreter, as typechecker 
 -- should throw an error before
 valueForId :: Ident -> Value -> EnvAndState -> EnvAndState
-valueForId id value (EnvAndState env state) = EnvAndState env (M.insert (fromMaybe (error "typechecker error") (M.lookup id env)) value state)
+valueForId id value (EnvAndState env state) = EnvAndState env (M.insert (fromMaybe 
+  (error "typechecker error") (M.lookup id env)) value state)
 
 getEnv :: EnvAndState -> IdentToLocation
 getEnv (EnvAndState env _) = env
@@ -115,9 +116,12 @@ interpretStmt (FnDef pos ident args _ (Block _ stmts)) = do
         (Arg _ id _, Value' value) -> modify $ matchIdentWithNewLocationAndSetValue id value
         (ArgRef _ id _, Loc' loc) -> modify $ matchIdentWithLocation id loc
         _ -> error "typechecker error")
-      -- If function does not reach a return statement foldM will run without an exception an will yield VNotReturned value.
+      -- If function does not reach a return statement foldM will run without an exception and 
+      -- will yield VNotReturned value.
       -- Otherwise return Exception is being thrown and catched and we get the returned value this way.
-      returnedValue <- (foldM (\_ stmt -> interpretStmt stmt >> return VNotReturned) VNotReturned stmts) `catchError` catchReturnValue
+      returnedValue <- (foldM (\_ stmt -> interpretStmt stmt >> return VNotReturned) VNotReturned stmts) 
+        `catchError` catchReturnValue
+      
       case returnedValue of
         VNotReturned -> throwError $ makeError pos "function does not reach return statement"
         rv -> return rv
@@ -208,7 +212,6 @@ interpretStmt (Print pos exprs) = do
   let concatenatedStrs = concat strs
   liftIO . putStrLn $ concatenatedStrs
 
--------------------------------------------------------------------------------
 
 getMulOp :: MulOp -> Integer -> Integer -> Integer
 getMulOp (Times _) = (*)
@@ -227,7 +230,7 @@ getRelOp relOp = case relOp of
   GE _ -> (>=)
   EQU _ -> (==)
   NE _ -> (/=)
----------------------------------------------------
+
 
 evalExpr :: Expr -> InterpreterMonad Value
 evalExpr expr = case expr of
@@ -323,7 +326,8 @@ evalExpr expr = case expr of
     case maybeFunction of
       -- func is of type [ValueOrLoc] -> InterpreterMonad Value
       Just (VFun argWays func) -> do
-        -- We check what way were the arguments passed. If by value we need just value, if by reference, we need the location.
+        -- We check what way were the arguments passed. If by value we need just value, if by reference, 
+        -- we need the location.
         valOrLocs <- forM (zip argWays exprs) (\x -> case x of
           (ByReference, (EVar _ id)) -> fmap Loc' (gets $ getLocationFromIdent id)
           (ByValue, expr) -> fmap Value' (evalExpr expr)
@@ -344,13 +348,13 @@ evalExpr expr = case expr of
           (Arg _ id _, Value' value) -> modify $ matchIdentWithNewLocationAndSetValue id value
           (ArgRef _ id _, Loc' loc) -> modify $ matchIdentWithLocation id loc
           _ -> error "typechecker")
-        returnedValue <- (foldM (\_ stmt -> interpretStmt stmt >> return VNotReturned) VNotReturned stmts) `catchError` catchReturnValue
+        returnedValue <- (foldM (\_ stmt -> interpretStmt stmt >> return VNotReturned) VNotReturned stmts) 
+          `catchError` catchReturnValue
         case returnedValue of
           VNotReturned -> throwError $ makeError pos "function does not reach return statement"
           rv -> return rv
     return (VFun argWays f)
 
---------------------------------------------------------------------------------
 
 interpret :: Program -> IO ()
 interpret prg = do
@@ -360,5 +364,3 @@ interpret prg = do
       RunTimeErrorExc err -> putStrLn err
       ReturnExc _ -> error "typechecker error"
     Right _ -> return ()
-
-------------------------------------------------------
