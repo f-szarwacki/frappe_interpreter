@@ -1,0 +1,20 @@
+// Nested function definitions.
+func c1: () -> void {
+  q: string;
+  q = "c1";
+  func c2: () -> void {
+    func c3: () -> void {
+      print(q);
+      return;
+    }
+    q: string;
+    q = "c2";
+    c3();
+    return;
+  }
+  c2();
+  return;
+}
+
+
+c1(); // prints "c1"

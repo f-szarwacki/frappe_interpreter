@@ -6,7 +6,7 @@
 +  05 (while, if)
 +  06 (funkcje lub procedury, rekurencja)
 +  07 (przez zmienną / przez wartość / in/out)
--  08 (zmienne read-only i pętla for)
+   08 (zmienne read-only i pętla for)
   Na 20 punktów
 +  09 (przesłanianie i statyczne wiązanie)
 +  10 (obsługa błędów wykonania)
@@ -14,7 +14,7 @@
   Na 30 punktów
 +  12 (4) (statyczne typowanie)
 +  13 (2) (funkcje zagnieżdżone ze statycznym wiązaniem)
-+  14 (1/2) (rekordy/listy/tablice/tablice wielowymiarowe)
+  14 (1/2) (rekordy/listy/tablice/tablice wielowymiarowe)
   15 (2) (krotki z przypisaniem)
   16 (1) (break, continue)
 +  17 (4) (funkcje wyższego rzędu, anonimowe, domknięcia)

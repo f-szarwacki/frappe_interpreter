@@ -1,0 +1,26 @@
+func fizzbuzz : (n : int) -> void {
+  i : int;
+  i = 1;
+  while (i <= n) {
+    fizz, buzz : bool;
+    fizz = i % 3 == 0;
+    buzz = i % 5 == 0;
+
+    if (fizz && buzz) {
+      print("fizzbuzz");
+    }
+    if (fizz && !buzz) {
+      print("fizz");
+    }
+    if (!fizz && buzz) {
+      print("buzz");
+    }
+    if (!(fizz || buzz)) {
+      print(i);
+    }
+    i++;
+  }
+  return;
+}
+
+fizzbuzz(21);

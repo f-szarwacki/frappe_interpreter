@@ -1,0 +1,12 @@
+func test : (x : int, y : @int) -> void {
+  x = x + 1;
+  y = y + 1;
+  return;
+}
+
+a, b : int;
+a = 0;
+b = 0;
+
+test(a, b);
+print("a: ", a, "; b: ", b);
