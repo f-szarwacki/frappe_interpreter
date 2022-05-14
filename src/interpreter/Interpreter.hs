@@ -9,6 +9,7 @@ import AbsFrappe
 import PrintFrappe
 import TypeChecker hiding (makeError, Position)
 
+import System.IO (hPutStrLn, stderr)
 import Data.String
 import Control.Monad.State
 import Control.Monad.Reader
@@ -361,6 +362,6 @@ interpret prg = do
   result <- evalStateT (runExceptT $ interpretProgram prg) (EnvAndState M.empty M.empty)
   case result of
     Left err -> case err of
-      RunTimeErrorExc err -> putStrLn err
+      RunTimeErrorExc err -> hPutStrLn stderr err
       ReturnExc _ -> error "typechecker error"
     Right _ -> return ()

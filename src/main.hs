@@ -1,7 +1,6 @@
 module Main where
 
-
-import System.IO ( stdin, hGetContents )
+import System.IO ( stdin, hGetContents, hPutStrLn, stderr )
 import System.Environment ( getArgs, getProgName )
 import System.Exit ( exitFailure, exitSuccess )
 
@@ -40,7 +39,7 @@ run v p s = let ts = myLLexer s in case p ts of
                           exitFailure
            Ok  tree -> do 
                           case typecheck tree of
-                            Left err -> putStrLn err >> exitFailure
+                            Left err -> hPutStrLn stderr err >> exitFailure
                             Right _ -> interpret tree >> exitSuccess --TODO not always a success
                           
 
