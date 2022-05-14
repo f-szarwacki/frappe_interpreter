@@ -28,7 +28,7 @@ $u = [. \n]          -- universal: any character
 
 -- Symbols and non-identifier-like reserved words
 
-@rsyms = \: | \( | \) | \- \> | \@ | \, | \{ | \} | \; | \[ | \] | \= | \+ \+ | \- \- | \- | \! | \& \& | \| \| | "lambda" \: | \+ | \* | \/ | \% | \< | \< \= | \> | \> \= | \= \= | \! \=
+@rsyms = \: | \( | \) | \- \> | \@ | \, | \{ | \} | \; | \= | \+ \+ | \- \- | \- | \! | \& \& | \| \| | "lambda" \: | \+ | \* | \/ | \% | \< | \< \= | \> | \> \= | \= \= | \! \=
 
 :-
 
@@ -161,24 +161,22 @@ eitherResIdent tv s = treeFind resWords
 -- | The keywords and symbols of the language organized as binary search tree.
 resWords :: BTree
 resWords =
-  b ">=" 22
-    (b "-" 11
-       (b ")" 6
-          (b "%" 3 (b "!=" 2 (b "!" 1 N N) N) (b "(" 5 (b "&&" 4 N N) N))
-          (b "++" 9 (b "+" 8 (b "*" 7 N N) N) (b "," 10 N N)))
-       (b "<" 17
-          (b "/" 14
-             (b "->" 13 (b "--" 12 N N) N) (b ";" 16 (b ":" 15 N N) N))
-          (b "==" 20 (b "=" 19 (b "<=" 18 N N) N) (b ">" 21 N N))))
-    (b "lambda:" 33
-       (b "else" 28
-          (b "]" 25
-             (b "[" 24 (b "@" 23 N N) N) (b "bool" 27 (b "array" 26 N N) N))
-          (b "if" 31 (b "func" 30 (b "false" 29 N N) N) (b "int" 32 N N)))
-       (b "void" 38
-          (b "string" 36
-             (b "return" 35 (b "print" 34 N N) N) (b "true" 37 N N))
-          (b "||" 41 (b "{" 40 (b "while" 39 N N) N) (b "}" 42 N N))))
+  b "==" 20
+    (b "," 10
+       (b "(" 5
+          (b "%" 3 (b "!=" 2 (b "!" 1 N N) N) (b "&&" 4 N N))
+          (b "+" 8 (b "*" 7 (b ")" 6 N N) N) (b "++" 9 N N)))
+       (b ":" 15
+          (b "->" 13 (b "--" 12 (b "-" 11 N N) N) (b "/" 14 N N))
+          (b "<=" 18 (b "<" 17 (b ";" 16 N N) N) (b "=" 19 N N))))
+    (b "lambda:" 30
+       (b "else" 25
+          (b "@" 23 (b ">=" 22 (b ">" 21 N N) N) (b "bool" 24 N N))
+          (b "if" 28 (b "func" 27 (b "false" 26 N N) N) (b "int" 29 N N)))
+       (b "void" 35
+          (b "string" 33
+             (b "return" 32 (b "print" 31 N N) N) (b "true" 34 N N))
+          (b "||" 38 (b "{" 37 (b "while" 36 N N) N) (b "}" 39 N N))))
   where
   b s n = B bs (TS bs n)
     where

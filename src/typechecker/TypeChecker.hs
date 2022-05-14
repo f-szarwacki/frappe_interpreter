@@ -63,8 +63,7 @@ typeCheckStmt (BStmt pos (Block _ stmts)) = do
 
 typeCheckStmt (Decl pos items t) = do
   forM_ items (\item -> case item of
-    NoInit pos id -> addIdTypePair pos id (getType t)
-    NoInitArr pos id idxs -> error "not implemented")
+    NoInit pos id -> addIdTypePair pos id (getType t))
 
 typeCheckStmt (Ret pos expr) = do
   typeRequired <- ask
@@ -90,7 +89,6 @@ typeCheckStmt (Ass pos lsa expr) = do
         Just varType -> if doTTypesMatch exprType varType
           then return ()
           else throwError $ makeError pos ("variable is declared as of type: " ++ show varType ++ ", it cannot be assigned a value of type: " ++ show exprType)
-    LSAArray _ id idxs -> error "not implemented"
 
 typeCheckStmt (SExp _ expr) = do
   typeCheckExpr expr
@@ -227,8 +225,6 @@ typeCheckExpr expr = case expr of
     -- Return defined function type.
     return (TFun (map getArgTType args) (getType returnType))
 
-  EArray pos id idxs -> error "not implemented"
-
   EApp pos id exprs -> do
     maybetype <- gets (M.lookup id)
     case maybetype of
@@ -273,7 +269,6 @@ instance Show TType where
     TFun argTypes returnType -> "(" ++ (intercalate ", " (map (\(argWay, t) -> (case argWay of
       ByValue -> ""
       ByReference -> "@") ++ show t) argTypes)) ++ ") -> " ++ show returnType 
-    TArray _ _ -> error "not implemented"
 
 getType :: Type -> TType
 getType t = case t of
@@ -284,7 +279,6 @@ getType t = case t of
   -- Like in c++, we both `func t : (x : @int) -> void` and `func s : (x : int) -> void` will have written type of
   -- (int) -> void so when getting type from written by user we cannot make any assumptions about passing args by reference
   FunT a tys ty -> TFun (map (\x -> (ByValue, getType x)) tys) (getType ty)
-  Array a ins ty -> error "not implemented"
 
 doTTypesMatch :: TType -> TType -> Bool
 doTTypesMatch (TFun args1 returnType1) (TFun args2 returnType2) = (all (\(t1, t2) -> doTTypesMatch t1 t2) (zip (map snd args1) (map snd args2))) && (doTTypesMatch returnType1 returnType2)

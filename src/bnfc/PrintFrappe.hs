@@ -191,7 +191,6 @@ instance Print [AbsFrappe.Stmt' a] where
 instance Print (AbsFrappe.Item' a) where
   prt i = \case
     AbsFrappe.NoInit _ id_ -> prPrec i 0 (concatD [prt 0 id_])
-    AbsFrappe.NoInitArr _ id_ indexs -> prPrec i 0 (concatD [prt 0 id_, doc (showString "["), prt 0 indexs, doc (showString "]")])
 
 instance Print [AbsFrappe.Item' a] where
   prt _ [] = concatD []
@@ -201,7 +200,6 @@ instance Print [AbsFrappe.Item' a] where
 instance Print (AbsFrappe.LeftSideAss' a) where
   prt i = \case
     AbsFrappe.LSAIdent _ id_ -> prPrec i 0 (concatD [prt 0 id_])
-    AbsFrappe.LSAArray _ id_ indexs -> prPrec i 0 (concatD [prt 0 id_, doc (showString "["), prt 0 indexs, doc (showString "]")])
 
 instance Print (AbsFrappe.Type' a) where
   prt i = \case
@@ -210,7 +208,6 @@ instance Print (AbsFrappe.Type' a) where
     AbsFrappe.Bool _ -> prPrec i 0 (concatD [doc (showString "bool")])
     AbsFrappe.Void _ -> prPrec i 0 (concatD [doc (showString "void")])
     AbsFrappe.FunT _ types type_ -> prPrec i 0 (concatD [doc (showString "("), prt 0 types, doc (showString ")"), doc (showString "->"), prt 0 type_])
-    AbsFrappe.Array _ indexs type_ -> prPrec i 0 (concatD [doc (showString "array"), doc (showString "["), prt 0 indexs, doc (showString "]"), prt 0 type_])
 
 instance Print [AbsFrappe.Type' a] where
   prt _ [] = concatD []
@@ -220,7 +217,6 @@ instance Print [AbsFrappe.Type' a] where
 instance Print (AbsFrappe.Expr' a) where
   prt i = \case
     AbsFrappe.EVar _ id_ -> prPrec i 6 (concatD [prt 0 id_])
-    AbsFrappe.EArray _ id_ indexs -> prPrec i 6 (concatD [prt 0 id_, doc (showString "["), prt 0 indexs, doc (showString "]")])
     AbsFrappe.ELitInt _ n -> prPrec i 6 (concatD [prt 0 n])
     AbsFrappe.ELitTrue _ -> prPrec i 6 (concatD [doc (showString "true")])
     AbsFrappe.ELitFalse _ -> prPrec i 6 (concatD [doc (showString "false")])

@@ -53,28 +53,21 @@ data Block' a = Block a [Stmt' a]
   deriving (C.Eq, C.Ord, C.Show, C.Read, C.Functor, C.Foldable, C.Traversable)
 
 type Item = Item' BNFC'Position
-data Item' a = NoInit a Ident | NoInitArr a Ident [Index' a]
+data Item' a = NoInit a Ident
   deriving (C.Eq, C.Ord, C.Show, C.Read, C.Functor, C.Foldable, C.Traversable)
 
 type LeftSideAss = LeftSideAss' BNFC'Position
-data LeftSideAss' a
-    = LSAIdent a Ident | LSAArray a Ident [Index' a]
+data LeftSideAss' a = LSAIdent a Ident
   deriving (C.Eq, C.Ord, C.Show, C.Read, C.Functor, C.Foldable, C.Traversable)
 
 type Type = Type' BNFC'Position
 data Type' a
-    = Int a
-    | Str a
-    | Bool a
-    | Void a
-    | FunT a [Type' a] (Type' a)
-    | Array a [Index' a] (Type' a)
+    = Int a | Str a | Bool a | Void a | FunT a [Type' a] (Type' a)
   deriving (C.Eq, C.Ord, C.Show, C.Read, C.Functor, C.Foldable, C.Traversable)
 
 type Expr = Expr' BNFC'Position
 data Expr' a
     = EVar a Ident
-    | EArray a Ident [Index' a]
     | ELitInt a Integer
     | ELitTrue a
     | ELitFalse a
@@ -157,12 +150,10 @@ instance HasPosition Block where
 instance HasPosition Item where
   hasPosition = \case
     NoInit p _ -> p
-    NoInitArr p _ _ -> p
 
 instance HasPosition LeftSideAss where
   hasPosition = \case
     LSAIdent p _ -> p
-    LSAArray p _ _ -> p
 
 instance HasPosition Type where
   hasPosition = \case
@@ -171,12 +162,10 @@ instance HasPosition Type where
     Bool p -> p
     Void p -> p
     FunT p _ _ -> p
-    Array p _ _ -> p
 
 instance HasPosition Expr where
   hasPosition = \case
     EVar p _ -> p
-    EArray p _ _ -> p
     ELitInt p _ -> p
     ELitTrue p -> p
     ELitFalse p -> p

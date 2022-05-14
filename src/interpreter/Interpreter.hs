@@ -139,10 +139,8 @@ interpretStmt (Decl pos items t) = do
     TBool -> return $ VBool False
     TVoid -> error "typechecker error"
     TFun _ _ -> return $ VUninitializedFunction
-    TArray _ _ -> error "not implemented"
   forM_ items (\item -> case item of
-    NoInit _ id -> modify $ matchIdentWithNewLocationAndSetValue id defaultValue
-    NoInitArr _ _ _ -> error "not implemented")
+    NoInit _ id -> modify $ matchIdentWithNewLocationAndSetValue id defaultValue)
   return ()
 
 interpretStmt (Ret _ expr) = do
@@ -155,7 +153,6 @@ interpretStmt (Ass pos lsa expr) = do
   exprValue <- evalExpr expr
   case lsa of
     LSAIdent _ id -> modify $ valueForId id exprValue
-    LSAArray _ id idxs -> error "not implemented"
 
 interpretStmt (SExp _ expr) = do
   evalExpr expr
@@ -352,8 +349,6 @@ evalExpr expr = case expr of
           VNotReturned -> throwError $ makeError pos "function does not reach return statement"
           rv -> return rv
     return (VFun argWays f)
-  
-  EArray pos id idxs -> error "not implemented"
 
 --------------------------------------------------------------------------------
 

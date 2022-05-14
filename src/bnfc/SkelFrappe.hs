@@ -56,12 +56,10 @@ transBlock x = case x of
 transItem :: Show a => AbsFrappe.Item' a -> Result
 transItem x = case x of
   AbsFrappe.NoInit _ ident -> failure x
-  AbsFrappe.NoInitArr _ ident indexs -> failure x
 
 transLeftSideAss :: Show a => AbsFrappe.LeftSideAss' a -> Result
 transLeftSideAss x = case x of
   AbsFrappe.LSAIdent _ ident -> failure x
-  AbsFrappe.LSAArray _ ident indexs -> failure x
 
 transType :: Show a => AbsFrappe.Type' a -> Result
 transType x = case x of
@@ -70,12 +68,10 @@ transType x = case x of
   AbsFrappe.Bool _ -> failure x
   AbsFrappe.Void _ -> failure x
   AbsFrappe.FunT _ types type_ -> failure x
-  AbsFrappe.Array _ indexs type_ -> failure x
 
 transExpr :: Show a => AbsFrappe.Expr' a -> Result
 transExpr x = case x of
   AbsFrappe.EVar _ ident -> failure x
-  AbsFrappe.EArray _ ident indexs -> failure x
   AbsFrappe.ELitInt _ integer -> failure x
   AbsFrappe.ELitTrue _ -> failure x
   AbsFrappe.ELitFalse _ -> failure x

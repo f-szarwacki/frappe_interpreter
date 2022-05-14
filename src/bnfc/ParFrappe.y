@@ -46,25 +46,22 @@ import LexFrappe
   '>'       { PT _ (TS _ 21) }
   '>='      { PT _ (TS _ 22) }
   '@'       { PT _ (TS _ 23) }
-  '['       { PT _ (TS _ 24) }
-  ']'       { PT _ (TS _ 25) }
-  'array'   { PT _ (TS _ 26) }
-  'bool'    { PT _ (TS _ 27) }
-  'else'    { PT _ (TS _ 28) }
-  'false'   { PT _ (TS _ 29) }
-  'func'    { PT _ (TS _ 30) }
-  'if'      { PT _ (TS _ 31) }
-  'int'     { PT _ (TS _ 32) }
-  'lambda:' { PT _ (TS _ 33) }
-  'print'   { PT _ (TS _ 34) }
-  'return'  { PT _ (TS _ 35) }
-  'string'  { PT _ (TS _ 36) }
-  'true'    { PT _ (TS _ 37) }
-  'void'    { PT _ (TS _ 38) }
-  'while'   { PT _ (TS _ 39) }
-  '{'       { PT _ (TS _ 40) }
-  '||'      { PT _ (TS _ 41) }
-  '}'       { PT _ (TS _ 42) }
+  'bool'    { PT _ (TS _ 24) }
+  'else'    { PT _ (TS _ 25) }
+  'false'   { PT _ (TS _ 26) }
+  'func'    { PT _ (TS _ 27) }
+  'if'      { PT _ (TS _ 28) }
+  'int'     { PT _ (TS _ 29) }
+  'lambda:' { PT _ (TS _ 30) }
+  'print'   { PT _ (TS _ 31) }
+  'return'  { PT _ (TS _ 32) }
+  'string'  { PT _ (TS _ 33) }
+  'true'    { PT _ (TS _ 34) }
+  'void'    { PT _ (TS _ 35) }
+  'while'   { PT _ (TS _ 36) }
+  '{'       { PT _ (TS _ 37) }
+  '||'      { PT _ (TS _ 38) }
+  '}'       { PT _ (TS _ 39) }
   L_Ident   { PT _ (TV _)    }
   L_integ   { PT _ (TI _)    }
   L_quoted  { PT _ (TL _)    }
@@ -131,9 +128,7 @@ ListStmt
   | Stmt ListStmt { (fst $1, (:) (snd $1) (snd $2)) }
 
 Item :: { (AbsFrappe.BNFC'Position, AbsFrappe.Item) }
-Item
-  : Ident { (fst $1, AbsFrappe.NoInit (fst $1) (snd $1)) }
-  | Ident '[' ListIndex ']' { (fst $1, AbsFrappe.NoInitArr (fst $1) (snd $1) (snd $3)) }
+Item : Ident { (fst $1, AbsFrappe.NoInit (fst $1) (snd $1)) }
 
 ListItem :: { (AbsFrappe.BNFC'Position, [AbsFrappe.Item]) }
 ListItem
@@ -147,7 +142,6 @@ Stmt1
 LeftSideAss :: { (AbsFrappe.BNFC'Position, AbsFrappe.LeftSideAss) }
 LeftSideAss
   : Ident { (fst $1, AbsFrappe.LSAIdent (fst $1) (snd $1)) }
-  | Ident '[' ListIndex ']' { (fst $1, AbsFrappe.LSAArray (fst $1) (snd $1) (snd $3)) }
 
 Type :: { (AbsFrappe.BNFC'Position, AbsFrappe.Type) }
 Type
@@ -156,7 +150,6 @@ Type
   | 'bool' { (uncurry AbsFrappe.BNFC'Position (tokenLineCol $1), AbsFrappe.Bool (uncurry AbsFrappe.BNFC'Position (tokenLineCol $1))) }
   | 'void' { (uncurry AbsFrappe.BNFC'Position (tokenLineCol $1), AbsFrappe.Void (uncurry AbsFrappe.BNFC'Position (tokenLineCol $1))) }
   | '(' ListType ')' '->' Type { (uncurry AbsFrappe.BNFC'Position (tokenLineCol $1), AbsFrappe.FunT (uncurry AbsFrappe.BNFC'Position (tokenLineCol $1)) (snd $2) (snd $5)) }
-  | 'array' '[' ListIndex ']' Type { (uncurry AbsFrappe.BNFC'Position (tokenLineCol $1), AbsFrappe.Array (uncurry AbsFrappe.BNFC'Position (tokenLineCol $1)) (snd $3) (snd $5)) }
 
 ListType :: { (AbsFrappe.BNFC'Position, [AbsFrappe.Type]) }
 ListType
@@ -167,7 +160,6 @@ ListType
 Expr6 :: { (AbsFrappe.BNFC'Position, AbsFrappe.Expr) }
 Expr6
   : Ident { (fst $1, AbsFrappe.EVar (fst $1) (snd $1)) }
-  | Ident '[' ListIndex ']' { (fst $1, AbsFrappe.EArray (fst $1) (snd $1) (snd $3)) }
   | Integer { (fst $1, AbsFrappe.ELitInt (fst $1) (snd $1)) }
   | 'true' { (uncurry AbsFrappe.BNFC'Position (tokenLineCol $1), AbsFrappe.ELitTrue (uncurry AbsFrappe.BNFC'Position (tokenLineCol $1))) }
   | 'false' { (uncurry AbsFrappe.BNFC'Position (tokenLineCol $1), AbsFrappe.ELitFalse (uncurry AbsFrappe.BNFC'Position (tokenLineCol $1))) }

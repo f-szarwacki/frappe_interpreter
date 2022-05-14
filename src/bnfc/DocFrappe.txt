@@ -30,20 +30,18 @@ except ``"`` unless preceded by ``\``.
 The set of reserved words is the set of terminals appearing in the grammar. Those reserved words that consist of non-letter characters are called symbols, and they are treated in a different way from those that are similar to identifiers. The lexer follows rules familiar from languages like Haskell, C, and Java, including longest match and spacing conventions.
 
 The reserved words used in Frappe are the following:
-  | ``array`` | ``bool`` | ``else`` | ``false``
-  | ``func`` | ``if`` | ``int`` | ``print``
-  | ``return`` | ``string`` | ``true`` | ``void``
-  | ``while`` |  |  |
+  | ``bool`` | ``else`` | ``false`` | ``func``
+  | ``if`` | ``int`` | ``print`` | ``return``
+  | ``string`` | ``true`` | ``void`` | ``while``
 
 The symbols used in Frappe are the following:
   | : | ( | ) | ->
   | @ | , | { | }
-  | ; | [ | ] | =
-  | ++ | -- | - | !
-  | && | || | lambda: | +
-  | * | / | % | <
-  | <= | > | >= | ==
-  | != |  |  |
+  | ; | = | ++ | --
+  | - | ! | && | ||
+  | lambda: | + | * | /
+  | % | < | <= | >
+  | >= | == | != |
 
 ===Comments===
 Single-line comments begin with #, //.Multiple-line comments are  enclosed with /* and */.
@@ -82,23 +80,19 @@ All other symbols are terminals.
   | //[Stmt]// | -> | **eps**
   |  |  **|**  | //Stmt// //[Stmt]//
   | //Item// | -> | //Ident//
-  |  |  **|**  | //Ident// ``[`` //[Index]// ``]``
   | //[Item]// | -> | //Item//
   |  |  **|**  | //Item// ``,`` //[Item]//
   | //Stmt1// | -> | //LeftSideAss// ``=`` //Expr// ``;``
   | //LeftSideAss// | -> | //Ident//
-  |  |  **|**  | //Ident// ``[`` //[Index]// ``]``
   | //Type// | -> | ``int``
   |  |  **|**  | ``string``
   |  |  **|**  | ``bool``
   |  |  **|**  | ``void``
   |  |  **|**  | ``(`` //[Type]// ``)`` ``->`` //Type//
-  |  |  **|**  | ``array`` ``[`` //[Index]// ``]`` //Type//
   | //[Type]// | -> | **eps**
   |  |  **|**  | //Type//
   |  |  **|**  | //Type// ``,`` //[Type]//
   | //Expr6// | -> | //Ident//
-  |  |  **|**  | //Ident// ``[`` //[Index]// ``]``
   |  |  **|**  | //Integer//
   |  |  **|**  | ``true``
   |  |  **|**  | ``false``
