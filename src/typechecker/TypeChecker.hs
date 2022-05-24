@@ -158,6 +158,13 @@ typeCheckStmt (Print pos exprs) = do
       TBool -> return ()
       t -> throwError $ makeError pos ("cannot print value of type: " ++ show t))
 
+typeCheckOperation :: Position -> [Expr] -> [TType] -> String -> TType -> TypeCheckerMonad TType
+typeCheckOperation pos exprs expectedTypes operationString resultType = do
+  forM_ (zip exprs expectedTypes) (\(expr, expectedType) -> do
+    exprType <- typeCheckExpr expr
+    when (exprType /= expectedType) $ throwError $ makeError pos ("cannot perform " ++ operationString ++ " on type: " ++ show exprType))
+  return resultType
+
 -- Checking types of all operations and returning type of expression.
 typeCheckExpr :: Expr -> TypeCheckerMonad TType
 typeCheckExpr expr = case expr of
@@ -166,65 +173,18 @@ typeCheckExpr expr = case expr of
     case maybetype of
       Nothing -> throwError $ makeError pos "variable not declared"
       Just t -> return t
+  
   ELitInt pos _ -> return TInt
   ELitTrue pos -> return TBool
   ELitFalse pos -> return TBool
   EString pos _ -> return TString
-  Neg pos expr -> do
-    exprType <- typeCheckExpr expr
-    case exprType of
-      TInt -> return TInt
-      _ -> throwError $ makeError pos "cannot integer negate type " ++ show exprType
-  Not pos expr -> do
-    exprType <- typeCheckExpr expr
-    case exprType of
-      TBool -> return TBool
-      _ -> throwError $ makeError pos "cannot boolean negate type " ++ show exprType
-  EMul pos expr1 mulOp expr2 -> do
-    exprType1 <- typeCheckExpr expr1
-    case exprType1 of
-      TInt -> do
-        exprType2 <- typeCheckExpr expr2
-        case exprType2 of
-          TInt -> return TInt
-          _ -> throwError $ makeError pos ("cannot perform " ++ printTree mulOp ++ " on type " ++ show exprType2)
-      _ -> throwError $ makeError pos ("cannot perform " ++ printTree mulOp ++ " on type " ++ show exprType1)
-  EAdd pos expr1 addOp expr2 -> do
-    exprType1 <- typeCheckExpr expr1
-    case exprType1 of
-      TInt -> do
-        exprType2 <- typeCheckExpr expr2
-        case exprType2 of
-          TInt -> return TInt
-          _ -> throwError $ makeError pos ("cannot perform " ++ printTree addOp ++ " on type " ++ show exprType2)
-      _ -> throwError $ makeError pos ("cannot perform " ++ printTree addOp ++ " on type " ++ show exprType1)
-  ERel pos expr1 relOp expr2 -> do
-    exprType1 <- typeCheckExpr expr1
-    case exprType1 of
-      TInt -> do
-        exprType2 <- typeCheckExpr expr2
-        case exprType2 of
-          TInt -> return TBool
-          _ -> throwError $ makeError pos ("cannot perform " ++ printTree relOp ++ " on type " ++ show exprType2)
-      _ -> throwError $ makeError pos ("cannot perform " ++ printTree relOp ++ " on type " ++ show exprType1)
-  EAnd pos expr1 expr2 -> do
-    exprType1 <- typeCheckExpr expr1
-    case exprType1 of
-      TBool -> do
-        exprType2 <- typeCheckExpr expr2
-        case exprType2 of
-          TBool -> return TBool
-          _ -> throwError $ makeError pos ("cannot perform && on type " ++ show exprType2)
-      _ -> throwError $ makeError pos ("cannot perform && on type " ++ show exprType1)
-  EOr pos expr1 expr2 -> do
-    exprType1 <- typeCheckExpr expr1
-    case exprType1 of
-      TBool -> do
-        exprType2 <- typeCheckExpr expr2
-        case exprType2 of
-          TBool -> return TBool
-          _ -> throwError $ makeError pos ("cannot perform || on type " ++ show exprType2)
-      _ -> throwError $ makeError pos ("cannot perform || on type " ++ show exprType1)
+  Neg pos expr -> typeCheckOperation pos [expr] [TInt] "-" TInt
+  Not pos expr -> typeCheckOperation pos [expr] [TBool] "!" TBool
+  EMul pos expr1 mulOp expr2 -> typeCheckOperation pos [expr1, expr2] [TInt, TInt] (printTree mulOp) TInt
+  EAdd pos expr1 addOp expr2 -> typeCheckOperation pos [expr1, expr2] [TInt, TInt] (printTree addOp) TInt
+  ERel pos expr1 relOp expr2 -> typeCheckOperation pos [expr1, expr2] [TInt, TInt] (printTree relOp) TBool
+  EAnd pos expr1 expr2 -> typeCheckOperation pos [expr1, expr2] [TBool, TBool] "&&" TBool
+  EOr pos expr1 expr2 -> typeCheckOperation pos [expr1, expr2] [TBool, TBool] "||" TBool
   
   ELambda pos args returnType (Block _ stmts) -> do
     funcType <- typeCheckFunctionDefinition pos Nothing args returnType stmts
