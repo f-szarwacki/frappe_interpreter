@@ -312,6 +312,7 @@ evalExpr expr = case expr of
         returnValue <- func valOrLocs
         modify $ putEnv savedEnv
         return returnValue
+      Just (VUninitializedFunction) -> throwError $ makeError pos "function is not initialized"
       _ -> error "typechecker error"
 
   ELambda pos args _ (Block _ stmts) -> do
