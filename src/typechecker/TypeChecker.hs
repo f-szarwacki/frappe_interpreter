@@ -32,8 +32,6 @@ type TypeCheckerMonad = ExceptT TypeCheckError (ReaderT (Maybe TType) (StateT Ty
 typeCheck :: Program -> TypeCheckerMonad ()
 typeCheck (Program _ stmts) = forM_ stmts typeCheckStmt
 
-typeCheckStmt :: Stmt -> TypeCheckerMonad ()
-
 addIdTypePair :: Position -> Ident -> TType -> TypeCheckerMonad ()
 addIdTypePair pos id t = case t of
   TVoid -> throwError $ makeError pos "cannot declare variable as void"
@@ -43,17 +41,26 @@ getArgTType :: Arg -> (ArgWay, TType)
 getArgTType (Arg _ _ t) = (ByValue, getType t)
 getArgTType (ArgRef _ _ t) = (ByReference, getType t)
 
-typeCheckStmt (FnDef pos ident args returnType (Block _ stmts)) = do
+typeCheckFunctionDefinition :: Position -> Maybe Ident -> [Arg] -> Type -> [Stmt] -> TypeCheckerMonad TType
+typeCheckFunctionDefinition pos maybeIdent args returnType stmts = do
   savedState <- get
   forM_ args (\arg-> case arg of
     Arg pos id t -> addIdTypePair pos id (getType t)
     ArgRef pos id t -> addIdTypePair pos id (getType t))
-  -- Function should be visible inside itself to allow recurrent call.
-  addIdTypePair pos ident (TFun (map getArgTType args) (getType returnType))
+  -- If function is not a lambda then its name is added to environment to allow recurrent call.
+  case maybeIdent of
+    Just ident -> addIdTypePair pos ident (TFun (map getArgTType args) (getType returnType))
+    Nothing -> return ()
   local (\_-> Just $ getType returnType) (forM_ stmts typeCheckStmt)
   put savedState
-  -- The argument variables are going out of scope, but the function itself has to be readded.
-  addIdTypePair pos ident (TFun (map getArgTType args) (getType returnType))
+  return (TFun (map getArgTType args) (getType returnType))
+
+typeCheckStmt :: Stmt -> TypeCheckerMonad ()
+
+typeCheckStmt (FnDef pos ident args returnType (Block _ stmts)) = do
+  funcType <- typeCheckFunctionDefinition pos (Just ident) args returnType stmts
+  -- We are defining the function so it is visible after declaration.
+  addIdTypePair pos ident funcType
 
 typeCheckStmt (Empty pos) = return ()
 typeCheckStmt (BStmt pos (Block _ stmts)) = do
@@ -220,14 +227,8 @@ typeCheckExpr expr = case expr of
       _ -> throwError $ makeError pos ("cannot perform || on type " ++ show exprType1)
   
   ELambda pos args returnType (Block _ stmts) -> do
-    savedState <- get
-    forM_ args (\arg-> case arg of
-      Arg pos id t -> addIdTypePair pos id (getType t)
-      ArgRef pos id t -> addIdTypePair pos id (getType t))
-    local (\_-> Just $ getType returnType) (forM_ stmts typeCheckStmt)
-    put savedState
-    -- Return defined function type.
-    return (TFun (map getArgTType args) (getType returnType))
+    funcType <- typeCheckFunctionDefinition pos Nothing args returnType stmts
+    return funcType
 
   EApp pos id exprs -> do
     maybetype <- gets (M.lookup id)
