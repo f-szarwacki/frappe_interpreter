@@ -1,0 +1,14 @@
+// Wrong number of arguments to mul5.
+
+// Function as a return value.
+func multiply_by: (n: int) -> (int) -> int {
+  return lambda: (t: int) -> int {
+    return t * n;
+  }
+}
+
+mul5: (int) -> int;
+mul5 = multiply_by(5);
+
+// Will print "10".
+print(mul5(2, 10));

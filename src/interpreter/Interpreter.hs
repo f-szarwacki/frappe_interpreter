@@ -351,11 +351,11 @@ evalExpr expr = case expr of
     return func
 
 
-interpret :: Program -> IO ()
+interpret :: Program -> IO (Either RunTimeError ())
 interpret prg = do
   result <- evalStateT (runExceptT $ interpretProgram prg) (EnvAndState M.empty M.empty)
   case result of
     Left err -> case err of
-      RunTimeErrorExc err -> hPutStrLn stderr err
+      RunTimeErrorExc err -> return (Left err)
       ReturnExc _ -> error "typechecker error"
-    Right _ -> return ()
+    Right _ -> return (Right ())
