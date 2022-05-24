@@ -51,8 +51,8 @@ data EnvAndState = EnvAndState IdentToLocation LocationToValue
 
 makeError :: Position -> String -> Exception
 makeError pos errorString = RunTimeErrorExc ((case pos of
-  Just (row, column) -> ("RunTimeError at row " ++ show row ++ ", column " ++ show column ++ ": ")
-  Nothing -> "RunTimeError: ") ++ errorString ++ ".")
+  Just (row, column) -> ("Runtime error at row " ++ show row ++ ", column " ++ show column ++ ": ")
+  Nothing -> "Runtime error: ") ++ errorString ++ ".")
 
 returnValue :: Value -> Exception
 returnValue = ReturnExc
@@ -239,6 +239,19 @@ getRelOp relOp = case relOp of
   EQU _ -> (==)
   NE _ -> (/=)
 
+getInt :: Expr -> InterpreterMonad Integer
+getInt expr = do
+  exprValue <- evalExpr expr
+  case exprValue of
+    (VInt n) -> return n
+    _ -> error "typechecker error"
+
+getBool :: Expr -> InterpreterMonad Bool
+getBool expr = do
+  exprValue <- evalExpr expr
+  case exprValue of
+    (VBool b) -> return b
+    _ -> error "typechecker error"
 
 evalExpr :: Expr -> InterpreterMonad Value
 evalExpr expr = case expr of
@@ -249,85 +262,40 @@ evalExpr expr = case expr of
       Nothing -> error "typechecker error"
   
   ELitInt pos num -> return $ VInt num
-  
   ELitTrue pos -> return $ VBool True
-  
   ELitFalse pos -> return $ VBool False
-  
   EString pos str -> return $ VString str
   
-  Neg pos expr -> do
-    exprValue <- evalExpr expr
-    intValue <- case exprValue of
-      VInt num -> return num
-      _ -> error "typechecker error"
-    return $ VInt $ negate intValue
-  
-  Not pos expr -> do
-    exprValue <- evalExpr expr
-    boolValue <- case exprValue of
-      VBool b -> return b
-      _ -> error "typechecker error"
-    return $ VBool $ not boolValue
+  Neg _ expr -> liftM VInt $ liftM negate (getInt expr)
+  Not pos expr -> liftM VBool $ liftM not (getBool expr)
+  EAdd pos expr1 addOp expr2 -> liftM VInt $ liftM2 (getAddOp addOp) (getInt expr1) (getInt expr2)
   
   EMul pos expr1 mulOp expr2 -> do
-    exprValue1 <- evalExpr expr1
-    intValue1 <- case exprValue1 of
-      VInt num -> return num
-      _ -> error "typechecker error"
-    exprValue2 <- evalExpr expr2
-    intValue2 <- case exprValue2 of
-      VInt num -> return num
-      _ -> error "typechecker error"
+    intValue1 <- getInt expr1
+    intValue2 <- getInt expr2
     case mulOp of
       Times _ -> return ()
       -- 0 division problem is applicable to both division and modulo
       _ -> when (intValue2 == 0) (throwError $ makeError pos "division by 0")
     return $ VInt ((getMulOp mulOp) intValue1 intValue2)    
   
-  EAdd pos expr1 addOp expr2 -> do
-    exprValue1 <- evalExpr expr1
-    intValue1 <- case exprValue1 of
-      VInt num -> return num
-      _ -> error "typechecker error"
-    exprValue2 <- evalExpr expr2
-    intValue2 <- case exprValue2 of
-      VInt num -> return num
-      _ -> error "typechecker error"
-    return $ VInt ((getAddOp addOp) intValue1 intValue2) 
-  
-  ERel pos expr1 relOp expr2 -> do
-    exprValue1 <- evalExpr expr1
-    intValue1 <- case exprValue1 of
-      VInt num -> return num
-      _ -> error "typechecker error"
-    exprValue2 <- evalExpr expr2
-    intValue2 <- case exprValue2 of
-      VInt num -> return num
-      _ -> error "typechecker error"
-    return $ VBool ((getRelOp relOp) intValue1 intValue2) 
+  ERel pos expr1 relOp expr2 -> liftM VBool $ liftM2 (getRelOp relOp) (getInt expr1) (getInt expr2) 
   
   EAnd pos expr1 expr2 -> do
-    exprValue1 <- evalExpr expr1
-    boolValue1 <- case exprValue1 of
-      VBool b -> return b
-      _ -> error "typechecker error"
-    exprValue2 <- evalExpr expr2
-    boolValue2 <- case exprValue2 of
-      VBool b -> return b
-      _ -> error "typechecker error"
-    return $ VBool (boolValue1 && boolValue2)
+    boolValue1 <- getBool expr1
+    if (not boolValue1)
+      then return $ VBool False
+      else do
+        boolValue2 <- getBool expr2
+        return $ VBool (boolValue1 && boolValue2)
   
   EOr pos expr1 expr2 -> do
-    exprValue1 <- evalExpr expr1
-    boolValue1 <- case exprValue1 of
-      VBool b -> return b
-      _ -> error "typechecker error"
-    exprValue2 <- evalExpr expr2
-    boolValue2 <- case exprValue2 of
-      VBool b -> return b
-      _ -> error "typechecker error"
-    return $ VBool (boolValue1 || boolValue2)
+    boolValue1 <- getBool expr1
+    if boolValue1
+      then return $ VBool True
+      else do
+        boolValue2 <- getBool expr2
+        return $ VBool (boolValue1 || boolValue2)
   
   EApp pos id exprs -> do
     maybeFunction <- gets $ valueFromId id
