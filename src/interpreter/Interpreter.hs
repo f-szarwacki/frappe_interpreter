@@ -33,7 +33,6 @@ data Value
   | VFun [ArgWay] ([ValueOrLoc] -> InterpreterMonad Value)
   | VVoid 
   | VUninitializedFunction  -- Value assigned to function variables declared but with no assignment.
-  | VNotReturned            -- Special pseudovalue used to check whether a function returned something.
 
 instance Show Value where
   show v = case v of
@@ -43,7 +42,6 @@ instance Show Value where
     VFun _ _ -> "Function"
     VVoid -> "void"
     VUninitializedFunction -> "UninitializedFunction"
-    VNotReturned -> "NotReturnedFromFunction"
 
 -- Exception is used both as a way of throwing errors and for non-local jumps (return statement).
 data Exception = RunTimeErrorExc RunTimeError | ReturnExc Value 
@@ -119,15 +117,12 @@ defineFunction pos maybeIdent args stmts = do
         (Arg _ id _, Value' value) -> modify $ matchIdentWithNewLocationAndSetValue id value
         (ArgRef _ id _, Loc' loc) -> modify $ matchIdentWithLocation id loc
         _ -> error "typechecker error")
-      -- If function does not reach a return statement foldM will run without an exception and 
-      -- will yield VNotReturned value.
+      -- If function does not reach a return statement forM_ will run without an exception and
+      -- throwError will be called.
       -- Otherwise return Exception is being thrown and catched and we get the returned value this way.
-      returnedValue <- (foldM (\_ stmt -> interpretStmt stmt >> return VNotReturned) VNotReturned stmts) 
+      (forM_ stmts interpretStmt >> (throwError $ makeError pos "function does not reach return statement")) 
         `catchError` catchReturnValue
       
-      case returnedValue of
-        VNotReturned -> throwError $ makeError pos "function does not reach return statement"
-        rv -> return rv
   return (VFun argWays f)
 
 interpretStmt :: Stmt -> InterpreterMonad ()
