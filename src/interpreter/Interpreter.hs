@@ -104,15 +104,17 @@ interpretProgram :: Program -> InterpreterMonad ()
 interpretProgram (Program _ stmts) = forM_ stmts interpretStmt
 ---------------------------------------------------------------------------------
 
-interpretStmt :: Stmt -> InterpreterMonad ()
-
-interpretStmt (FnDef pos ident args _ (Block _ stmts)) = do
+defineFunction :: Position -> Maybe Ident -> [Arg] -> [Stmt] -> InterpreterMonad Value
+defineFunction pos maybeIdent args stmts = do
   currentEnv <- gets getEnv
   let argWays = map (fst . getArgTType) args
   let f valueOrLocs = do
       -- In function body, which will be run, environment from the place of declaration is being used.
       modify $ putEnv currentEnv
-      modify $ matchIdentWithNewLocationAndSetValue ident (VFun argWays f)
+      case maybeIdent of 
+        Just ident -> modify $ matchIdentWithNewLocationAndSetValue ident (VFun argWays f)
+        Nothing -> return ()
+      
       forM_ (zip args valueOrLocs) (\x -> case x of
         (Arg _ id _, Value' value) -> modify $ matchIdentWithNewLocationAndSetValue id value
         (ArgRef _ id _, Loc' loc) -> modify $ matchIdentWithLocation id loc
@@ -126,8 +128,13 @@ interpretStmt (FnDef pos ident args _ (Block _ stmts)) = do
       case returnedValue of
         VNotReturned -> throwError $ makeError pos "function does not reach return statement"
         rv -> return rv
+  return (VFun argWays f)
 
-  modify $ matchIdentWithNewLocationAndSetValue ident (VFun argWays f)
+interpretStmt :: Stmt -> InterpreterMonad ()
+
+interpretStmt (FnDef pos ident args _ (Block _ stmts)) = do
+  func <- defineFunction pos (Just ident) args stmts
+  modify $ matchIdentWithNewLocationAndSetValue ident func
 
 interpretStmt (Empty _) = return ()
 
@@ -339,22 +346,9 @@ evalExpr expr = case expr of
         return returnValue
       _ -> error "typechecker error"
 
-  ELambda pos args returnType (Block _ stmts) -> do
-    currentEnv <- gets getEnv
-    let argWays = map (fst . getArgTType) args
-    let f valueOrLocs = do
-        -- In function body, which will be run, environment from the place of declaration is being used.
-        modify $ putEnv currentEnv
-        forM_ (zip args valueOrLocs) (\x -> case x of
-          (Arg _ id _, Value' value) -> modify $ matchIdentWithNewLocationAndSetValue id value
-          (ArgRef _ id _, Loc' loc) -> modify $ matchIdentWithLocation id loc
-          _ -> error "typechecker")
-        returnedValue <- (foldM (\_ stmt -> interpretStmt stmt >> return VNotReturned) VNotReturned stmts) 
-          `catchError` catchReturnValue
-        case returnedValue of
-          VNotReturned -> throwError $ makeError pos "function does not reach return statement"
-          rv -> return rv
-    return (VFun argWays f)
+  ELambda pos args _ (Block _ stmts) -> do
+    func <- defineFunction pos Nothing args stmts
+    return func
 
 
 interpret :: Program -> IO ()
