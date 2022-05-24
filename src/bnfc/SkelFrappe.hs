@@ -61,13 +61,18 @@ transLeftSideAss :: Show a => AbsFrappe.LeftSideAss' a -> Result
 transLeftSideAss x = case x of
   AbsFrappe.LSAIdent _ ident -> failure x
 
+transArgPass :: Show a => AbsFrappe.ArgPass' a -> Result
+transArgPass x = case x of
+  AbsFrappe.ArgByValue _ type_ -> failure x
+  AbsFrappe.ArgByReference _ type_ -> failure x
+
 transType :: Show a => AbsFrappe.Type' a -> Result
 transType x = case x of
   AbsFrappe.Int _ -> failure x
   AbsFrappe.Str _ -> failure x
   AbsFrappe.Bool _ -> failure x
   AbsFrappe.Void _ -> failure x
-  AbsFrappe.FunT _ types type_ -> failure x
+  AbsFrappe.FunT _ argpasss type_ -> failure x
 
 transExpr :: Show a => AbsFrappe.Expr' a -> Result
 transExpr x = case x of

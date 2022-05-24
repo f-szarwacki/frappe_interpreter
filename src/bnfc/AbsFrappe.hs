@@ -60,9 +60,14 @@ type LeftSideAss = LeftSideAss' BNFC'Position
 data LeftSideAss' a = LSAIdent a Ident
   deriving (C.Eq, C.Ord, C.Show, C.Read, C.Functor, C.Foldable, C.Traversable)
 
+type ArgPass = ArgPass' BNFC'Position
+data ArgPass' a
+    = ArgByValue a (Type' a) | ArgByReference a (Type' a)
+  deriving (C.Eq, C.Ord, C.Show, C.Read, C.Functor, C.Foldable, C.Traversable)
+
 type Type = Type' BNFC'Position
 data Type' a
-    = Int a | Str a | Bool a | Void a | FunT a [Type' a] (Type' a)
+    = Int a | Str a | Bool a | Void a | FunT a [ArgPass' a] (Type' a)
   deriving (C.Eq, C.Ord, C.Show, C.Read, C.Functor, C.Foldable, C.Traversable)
 
 type Expr = Expr' BNFC'Position
@@ -154,6 +159,11 @@ instance HasPosition Item where
 instance HasPosition LeftSideAss where
   hasPosition = \case
     LSAIdent p _ -> p
+
+instance HasPosition ArgPass where
+  hasPosition = \case
+    ArgByValue p _ -> p
+    ArgByReference p _ -> p
 
 instance HasPosition Type where
   hasPosition = \case

@@ -84,11 +84,16 @@ All other symbols are terminals.
   |  |  **|**  | //Item// ``,`` //[Item]//
   | //Stmt1// | -> | //LeftSideAss// ``=`` //Expr// ``;``
   | //LeftSideAss// | -> | //Ident//
+  | //ArgPass// | -> | //Type//
+  |  |  **|**  | ``@`` //Type//
+  | //[ArgPass]// | -> | **eps**
+  |  |  **|**  | //ArgPass//
+  |  |  **|**  | //ArgPass// ``,`` //[ArgPass]//
   | //Type// | -> | ``int``
   |  |  **|**  | ``string``
   |  |  **|**  | ``bool``
   |  |  **|**  | ``void``
-  |  |  **|**  | ``(`` //[Type]// ``)`` ``->`` //Type//
+  |  |  **|**  | ``(`` //[ArgPass]// ``)`` ``->`` //Type//
   | //[Type]// | -> | **eps**
   |  |  **|**  | //Type//
   |  |  **|**  | //Type// ``,`` //[Type]//

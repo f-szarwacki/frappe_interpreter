@@ -1,0 +1,12 @@
+f : (@int) -> int;
+
+func g : (x : int) -> int {
+  return f(x);
+}
+
+f = lambda: (y : @int) -> int {y++; return y - 2;};
+
+c : int;
+c = 0;
+print(g(c));
+print(c);

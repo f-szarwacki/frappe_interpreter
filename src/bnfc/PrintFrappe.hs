@@ -201,13 +201,23 @@ instance Print (AbsFrappe.LeftSideAss' a) where
   prt i = \case
     AbsFrappe.LSAIdent _ id_ -> prPrec i 0 (concatD [prt 0 id_])
 
+instance Print (AbsFrappe.ArgPass' a) where
+  prt i = \case
+    AbsFrappe.ArgByValue _ type_ -> prPrec i 0 (concatD [prt 0 type_])
+    AbsFrappe.ArgByReference _ type_ -> prPrec i 0 (concatD [doc (showString "@"), prt 0 type_])
+
+instance Print [AbsFrappe.ArgPass' a] where
+  prt _ [] = concatD []
+  prt _ [x] = concatD [prt 0 x]
+  prt _ (x:xs) = concatD [prt 0 x, doc (showString ","), prt 0 xs]
+
 instance Print (AbsFrappe.Type' a) where
   prt i = \case
     AbsFrappe.Int _ -> prPrec i 0 (concatD [doc (showString "int")])
     AbsFrappe.Str _ -> prPrec i 0 (concatD [doc (showString "string")])
     AbsFrappe.Bool _ -> prPrec i 0 (concatD [doc (showString "bool")])
     AbsFrappe.Void _ -> prPrec i 0 (concatD [doc (showString "void")])
-    AbsFrappe.FunT _ types type_ -> prPrec i 0 (concatD [doc (showString "("), prt 0 types, doc (showString ")"), doc (showString "->"), prt 0 type_])
+    AbsFrappe.FunT _ argpasss type_ -> prPrec i 0 (concatD [doc (showString "("), prt 0 argpasss, doc (showString ")"), doc (showString "->"), prt 0 type_])
 
 instance Print [AbsFrappe.Type' a] where
   prt _ [] = concatD []

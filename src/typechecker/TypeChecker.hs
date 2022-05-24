@@ -279,19 +279,21 @@ instance Show TType where
       ByValue -> ""
       ByReference -> "@") ++ show t) argTypes)) ++ ") -> " ++ show returnType 
 
+getArgWayFromArgPass :: ArgPass -> (ArgWay, TType)
+getArgWayFromArgPass (ArgByValue _ t) = (ByValue, getType t)
+getArgWayFromArgPass (ArgByReference _ t) = (ByReference, getType t)
+
 getType :: Type -> TType
 getType t = case t of
   Int a -> TInt
   Str a -> TString
   Bool a -> TBool
   Void a -> TVoid
-  -- Like in c++, we both `func t : (x : @int) -> void` and `func s : (x : int) -> void` will have written type of
-  -- (int) -> void so when getting type from written by user we cannot make any assumptions about passing args by reference
-  FunT a tys ty -> TFun (map (\x -> (ByValue, getType x)) tys) (getType ty)
+  FunT a tys ty -> TFun (map getArgWayFromArgPass tys) (getType ty)
 
 doTTypesMatch :: TType -> TType -> Bool
-doTTypesMatch (TFun args1 returnType1) (TFun args2 returnType2) = (all (\(t1, t2) -> doTTypesMatch t1 t2) 
-  (zip (map snd args1) (map snd args2))) && (doTTypesMatch returnType1 returnType2)
+--doTTypesMatch (TFun args1 returnType1) (TFun args2 returnType2) = (all (\(t1, t2) -> doTTypesMatch t1 t2) 
+  --(zip (map snd args1) (map snd args2))) && (doTTypesMatch returnType1 returnType2)
 doTTypesMatch t1 t2 = t1 == t2
 
 runTypeChecker :: TypeCheckerMonad () -> Maybe TType -> TypeMap -> Either TypeCheckError ()

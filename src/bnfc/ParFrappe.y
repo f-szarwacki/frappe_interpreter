@@ -143,13 +143,24 @@ LeftSideAss :: { (AbsFrappe.BNFC'Position, AbsFrappe.LeftSideAss) }
 LeftSideAss
   : Ident { (fst $1, AbsFrappe.LSAIdent (fst $1) (snd $1)) }
 
+ArgPass :: { (AbsFrappe.BNFC'Position, AbsFrappe.ArgPass) }
+ArgPass
+  : Type { (fst $1, AbsFrappe.ArgByValue (fst $1) (snd $1)) }
+  | '@' Type { (uncurry AbsFrappe.BNFC'Position (tokenLineCol $1), AbsFrappe.ArgByReference (uncurry AbsFrappe.BNFC'Position (tokenLineCol $1)) (snd $2)) }
+
+ListArgPass :: { (AbsFrappe.BNFC'Position, [AbsFrappe.ArgPass]) }
+ListArgPass
+  : {- empty -} { (AbsFrappe.BNFC'NoPosition, []) }
+  | ArgPass { (fst $1, (:[]) (snd $1)) }
+  | ArgPass ',' ListArgPass { (fst $1, (:) (snd $1) (snd $3)) }
+
 Type :: { (AbsFrappe.BNFC'Position, AbsFrappe.Type) }
 Type
   : 'int' { (uncurry AbsFrappe.BNFC'Position (tokenLineCol $1), AbsFrappe.Int (uncurry AbsFrappe.BNFC'Position (tokenLineCol $1))) }
   | 'string' { (uncurry AbsFrappe.BNFC'Position (tokenLineCol $1), AbsFrappe.Str (uncurry AbsFrappe.BNFC'Position (tokenLineCol $1))) }
   | 'bool' { (uncurry AbsFrappe.BNFC'Position (tokenLineCol $1), AbsFrappe.Bool (uncurry AbsFrappe.BNFC'Position (tokenLineCol $1))) }
   | 'void' { (uncurry AbsFrappe.BNFC'Position (tokenLineCol $1), AbsFrappe.Void (uncurry AbsFrappe.BNFC'Position (tokenLineCol $1))) }
-  | '(' ListType ')' '->' Type { (uncurry AbsFrappe.BNFC'Position (tokenLineCol $1), AbsFrappe.FunT (uncurry AbsFrappe.BNFC'Position (tokenLineCol $1)) (snd $2) (snd $5)) }
+  | '(' ListArgPass ')' '->' Type { (uncurry AbsFrappe.BNFC'Position (tokenLineCol $1), AbsFrappe.FunT (uncurry AbsFrappe.BNFC'Position (tokenLineCol $1)) (snd $2) (snd $5)) }
 
 ListType :: { (AbsFrappe.BNFC'Position, [AbsFrappe.Type]) }
 ListType

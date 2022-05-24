@@ -30,8 +30,6 @@ Decl.      Stmt ::= [Item] ":" Type ";" ;
 
 NoInit.    Item ::= Ident ;
 
-NoInitArr. Item ::= Ident "[" [Index] "]" ;
-
 separator nonempty Item "," ;
 
 Ass.      Stmt1 ::= LeftSideAss "=" Expr ";" ;
@@ -41,8 +39,6 @@ _.        Stmt ::= Stmt1 ;
 SExp.     Stmt ::= Expr ";" ;
 
 LSAIdent.       LeftSideAss ::= Ident ;
-
-LSAArray.       LeftSideAss ::= Ident "[" [Index] "]" ;
 
 Incr.      Stmt ::= Ident "++"  ";" ;
 
@@ -60,6 +56,14 @@ While.     Stmt ::= "while" "(" Expr ")" Block ;
 
 Print.     Stmt ::= "print" "(" [Expr] ")" ";" ;
 
+-- ArgumentPassing -----------------------------------------
+
+ArgByValue.       ArgPass ::= Type ;
+
+ArgByReference.   ArgPass ::= "@" Type ;
+
+separator  ArgPass "," ;
+
 -- Types ---------------------------------------------------
 
 Int.       Type ::= "int" ;
@@ -70,17 +74,13 @@ Bool.      Type ::= "bool" ;
 
 Void.      Type ::= "void" ;
 
-FunT.      Type ::= "(" [Type] ")" "->" Type ;
-
-Array.     Type ::= "array" "[" [Index] "]" Type ; 
+FunT.      Type ::= "(" [ArgPass] ")" "->" Type ; 
 
 separator  Type "," ;
 
 -- Expressions ---------------------------------------------
 
 EVar.      Expr6 ::= Ident ;
-
-EArray.    Expr6 ::= Ident "[" [Index] "]" ;
 
 ELitInt.   Expr6 ::= Integer ;
 

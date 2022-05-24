@@ -56,6 +56,14 @@ While.     Stmt ::= "while" "(" Expr ")" Block ;
 
 Print.     Stmt ::= "print" "(" [Expr] ")" ";" ;
 
+-- ArgumentPassing -----------------------------------------
+
+ArgByValue.       ArgPass ::= Type ;
+
+ArgByReference.   ArgPass ::= "@" Type ;
+
+separator  ArgPass "," ;
+
 -- Types ---------------------------------------------------
 
 Int.       Type ::= "int" ;
@@ -66,7 +74,7 @@ Bool.      Type ::= "bool" ;
 
 Void.      Type ::= "void" ;
 
-FunT.      Type ::= "(" [Type] ")" "->" Type ; 
+FunT.      Type ::= "(" [ArgPass] ")" "->" Type ; 
 
 separator  Type "," ;
 

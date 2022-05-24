@@ -1,9 +1,0 @@
-x : int;
-y : int;
-y = 5;
-while (y < 10) {
-print(x);
-x : string;
-x = "test";
-y++;
-}
